@@ -214,7 +214,7 @@ const UpdateTaskScreen = () => {
       subject_info: {
         subject,
         teacher_id,
-        teacher_info: { avatar, name },
+        team_info: { avatar, name },
       },
       class_info: { section, standard },
       title,

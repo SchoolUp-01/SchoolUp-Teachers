@@ -598,7 +598,7 @@ class supabase_api {
       const { data, error } = await supabase
         .from(timetable_info_db)
         .select(
-          "id, class_id, class_info!inner(standard,section), end_hour, end_minute, location, start_hour, start_minute, subject_id, title, day, subject_info!inner(subject,teacher_id,teacher_info(name,avatar))"
+          "id, class_id, class_info!inner(standard,section), end_hour, end_minute, location, start_hour, start_minute, subject_id, title, day, subject_info!inner(subject,teacher_id,team_info(name,avatar))"
         )
         .eq("day", days[today.getDay()]) // Filter by the current day of the week
         .order("start_hour") // Order by start hour

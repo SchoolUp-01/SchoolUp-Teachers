@@ -228,13 +228,6 @@ export default function RaiseConcernScreen() {
           </KeyboardAvoidingView>
         </ScrollView>
         <View>
-          <Text style={styles.leaveInfoText}>
-            Report will be sent to Class Teacher
-            <Text style={{ fontFamily: "RHD-Bold" }}>
-              {" " + Student.shared.getMasterStudentTeacherName()}{" "}
-            </Text>
-            and School Administration for future investigation.
-          </Text>
           <TouchableOpacity onPress={() => handleSubmit()}>
             <View style={styles.primaryButton}>
               {loading && <ActivityIndicator size={36} color={"#fff"} />}

@@ -59,9 +59,9 @@ export default function ProfileTab() {
     );
   };
 
-  const InformationItem = ({ label, description, icon, color }) => {
+  const InformationItem = ({ label, description, icon, color, onPress=null }) => {
     return (
-      <TouchableOpacity>
+      <TouchableOpacity onPress={onPress}>
         <View
           style={{
             paddingHorizontal: 16,
@@ -69,7 +69,7 @@ export default function ProfileTab() {
             marginVertical: 8,
             flexDirection: "row",
             alignItems: "center",
-            width: width / 2 - 32,
+            width: width / 2 - 24,
             backgroundColor: color+"2a",
             borderRadius: 8,
             height: 144,
@@ -241,12 +241,18 @@ export default function ProfileTab() {
             description={"Apply for your next leave here"}
             icon={"flight-takeoff"}
             color={"#0968e5"}
+            onPress={()=> navigation.navigate("ActionStack",
+              { screen:"ApplyLeaveScreen"}
+             )}
           />
           <InformationItem
             label={"Raise a concern"}
             description={"Raise an issue with school administration"}
             icon={"report-problem"}
             color={"#e20b8c"}
+            onPress={()=> navigation.navigate("ActionStack",
+             { screen:"RaiseConcernScreen"}
+            )}
           />
         </View>
       </View>

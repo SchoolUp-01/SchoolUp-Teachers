@@ -27,6 +27,7 @@ import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import supabase_api from "../backend/supabase_api";
 import ErrorLogger from "../utils/ErrorLogger";
+import InAppNotification from "../utils/InAppNotification";
 
 export default function ApplyLeaveScreen() {
   const navigation = useNavigation();
@@ -40,16 +41,20 @@ export default function ApplyLeaveScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = () => {
-    setLoading(true);
-    supabase_api.shared
-      .addLeaveRequest(startDate, endDate, leaveType, reason)
-      .then((res) => {
-        navigation.replace("AttendanceScreen");
-      })
-      .catch((error) => {
-        ErrorLogger.shared.ShowError("ApplyLeaveScreen: handleSubmit: ", error);
-      })
-      .finally(() => setLoading(false));
+    InAppNotification.shared.showWarningNotification({
+      title:"This feature is currently unavailable",
+      description:"Please try again later"
+    })
+    // setLoading(true);
+    // supabase_api.shared
+    //   .addLeaveRequest(startDate, endDate, leaveType, reason)
+    //   .then((res) => {
+    //     navigation.replace("AttendanceScreen");
+    //   })
+    //   .catch((error) => {
+    //     ErrorLogger.shared.ShowError("ApplyLeaveScreen: handleSubmit: ", error);
+    //   })
+    //   .finally(() => setLoading(false));
   };
 
   const setDateStart = (event, date) => {
@@ -242,7 +247,7 @@ export default function ApplyLeaveScreen() {
               <Text style={styles.headerText}>Apply Leave</Text>
             </View>
             <Text style={styles.subText}>
-              To process your child's leave application smoothly, please provide
+              To process your leave application smoothly, please provide
               the following details
             </Text>
           </View>
@@ -287,15 +292,7 @@ export default function ApplyLeaveScreen() {
           </View>
         </View>
         <View>
-          <Text style={styles.leaveInfoText}>
-            {leaveType == "General"
-              ? "Leave Application will be sent to Class Teacher "
-              : "Class Teacher "}
-            <Text style={{ fontFamily: "RHD-Bold" }}>{Student.shared.getMasterStudentTeacherName()}</Text>
-            {leaveType == "General"
-              ? " for approval "
-              : " will be informed about pupil sick leave."}
-          </Text>
+         
           <TouchableOpacity onPress={() => handleSubmit()}>
             <View style={styles.primaryButton}>
               {loading && <ActivityIndicator size={36} color={"#fff"} />}

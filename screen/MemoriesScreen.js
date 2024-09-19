@@ -96,11 +96,9 @@ const MemoriesScreen = () => {
       title,
       caption,
       media,
-      class_list,
-      student_list,
-      school_id,
       created_at,
     } = item;
+  
     return (
       <View
         style={{
@@ -120,9 +118,11 @@ const MemoriesScreen = () => {
             alignItems: "center",
           }}
         >
-          <View>
+          <View style={{ flex: 1, marginRight: 10 }}> 
             <Text
               style={{ fontFamily: "RHD-Medium", fontSize: 16, lineHeight: 24 }}
+              numberOfLines={1}  // Ensure title doesn't overflow
+              ellipsizeMode="tail"
             >
               {title}
             </Text>
@@ -141,18 +141,18 @@ const MemoriesScreen = () => {
             </Text>
           </View>
           <TouchableOpacity
-            onPress={() => [
+            onPress={() => {
               navigation.navigate("EditMemoriesScreen", {
                 item: item,
-              }),
-            ]}
+              });
+            }}
             style={{
               backgroundColor: primaryColor_50,
               paddingVertical: 6,
               borderRadius: 8,
-              paddingHorizontal: 12,
-              marginTop: 4,
+              paddingHorizontal: 10,  // Adjusted padding
               alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <Text style={{ fontFamily: "RHD-Medium", color: primaryColor_800 }}>
@@ -160,22 +160,26 @@ const MemoriesScreen = () => {
             </Text>
           </TouchableOpacity>
         </View>
-        {caption!== ""&&
-        <Text
-        style={{
-          fontFamily: "RHD-Regular",
-          fontSize: 14,
-          lineHeight: 21,
-          marginVertical: 8,
-        }}
-        numberOfLines={3}
-      >
-        {caption}
-      </Text>}
+  
+        {caption !== "" && (
+          <Text
+            style={{
+              fontFamily: "RHD-Regular",
+              fontSize: 14,
+              lineHeight: 21,
+              marginVertical: 8,
+            }}
+            numberOfLines={3}
+            ellipsizeMode="tail"
+          >
+            {caption}
+          </Text>
+        )}
         <PreviewContentList mediaList={JSON.parse(media)} />
       </View>
     );
   };
+  
 
   const renderEmpty = () => {
     if (loading) return <MemoryShimmer />;
