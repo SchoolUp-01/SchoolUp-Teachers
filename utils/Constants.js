@@ -1,0 +1,26 @@
+export const parent_info_db = "parent_info";
+export const student_info_db = "student_info";
+export const teacher_info_db = "teacher_info";
+export const teacher_notification_info_db = "teacher_notification_info";
+export const school_info_db = "school_info";
+export const holiday_calendar_db = "holiday_calendar";
+export const leave_applications_db = "leave_applications";
+export const student_statistics_db = "student_statistics";
+export const subject_info_db = "subject_info";
+export const timetable_info_db = "timetable_info";
+export const exam_info_db = "exam_info";
+export const exam_timetable_info_db = "exam_timetable_info";
+export const concern_info_db = "concern_info";
+export const student_report_info_db = "student_report_info";
+export const subject_report_info_db = "subject_report_info";
+export const conversation_info_db = "conversation_info";
+export const message_info_db = "message_info";
+export const lesson_info_db = "lesson_info";
+export const student_memories_db = "student_memories";
+export const school_management_db = "school_management_info";
+export const school_event_info = "school_event_info";
+export const daily_task_info_db = "daily_task_info";
+export const subject_notification_db = "subject_notification";
+export const parent_notification_db = "parent_notification";
+export const class_info_db = "class_info";
+

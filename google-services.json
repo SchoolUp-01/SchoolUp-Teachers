@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "466677395832",
+    "project_id": "stage-could",
+    "storage_bucket": "stage-could.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:466677395832:android:2480814d64b0111a13188d",
+        "android_client_info": {
+          "package_name": "com.stage.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "466677395832-71tftmp7n115gktcc0vo2llad9afl84t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCoWS0oe6y_gsjZ2N9ZMUERIjrGf0imBtw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "466677395832-71tftmp7n115gktcc0vo2llad9afl84t.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

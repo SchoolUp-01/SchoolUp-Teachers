@@ -1,0 +1,121 @@
+{
+  "expo": {
+    "name": "SchoolUp Teacher App",
+    "slug": "SchoolUp",
+    "version": "1.0.0",
+    "scheme": "schoolup",
+    "orientation": "portrait",
+    "icon": "./assets/logos/2.png",
+    "userInterfaceStyle": "automatic",
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.schoolup.ios",
+      "userInterfaceStyle": "automatic",
+      "associatedDomains": [
+        "applinks:SchoolUp.com"
+      ],
+      "buildNumber": "1",
+      "requireFullScreen": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app uses the microphone to record user submissions.",
+        "NSUserTrackingUsageDescription": "This app shows advertisement to user"
+      }
+    },
+    "android": {
+      "userInterfaceStyle": "automatic",
+      "package": "com.schoolup.teacher",
+      "autoVerify": true,
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "schoolup.in"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "splash": {
+       
+        "resizeMode": "cover",
+        "backgroundColor": "#df5520"
+      }
+    },
+    "androidNavigationBar": {
+      "barStyle": "light-content"
+    },
+    "androidStatusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#df5520"
+    },
+    "plugins": [
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "DEFAULT"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon_512_v2.png",
+          "color": "#ffffff"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "custom photos permission",
+          "cameraPermission": "Allow Stage to open the camera",
+          "microphonePermission": "Allow Stage to access your camera."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 33,
+            "targetSdkVersion": 33,
+            "buildToolsVersion": "33.0.0"
+          }
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Stage to access your camera.",
+          "microphonePermission": "Allow Stage to access your camera."
+        }
+      ],[
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ea3c4b18-e124-418f-9840-bb2df1609aed"
+      }
+    },
+    "owner": "rjain1329"
+  }
+}
