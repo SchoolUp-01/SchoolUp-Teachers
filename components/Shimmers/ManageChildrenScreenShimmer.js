@@ -1,10 +1,10 @@
-import SkeletonPlaceholder from "expo-react-native-skeleton-placeholder";
 import { View, Text, StyleSheet } from "react-native";
 import {
   borderColor,
   borderWidth,
   defaultImageBgColor,
 } from "../../utils/Color";
+import SkeletonLoading from "./SkeletonLoader";
 
 export default function ManageChildrenScreenShimmer() {
   const renderStudentItem = () => {
@@ -138,11 +138,11 @@ export default function ManageChildrenScreenShimmer() {
     );
   };
   return (
-    <SkeletonPlaceholder borderRadius={4}>
+    <SkeletonLoading borderRadius={4}>
       {renderStudentItem()}
       {renderStudentItem()}
       {renderStudentItem()}
-    </SkeletonPlaceholder>
+    </SkeletonLoading>
   );
 }
 

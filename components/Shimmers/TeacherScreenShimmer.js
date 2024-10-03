@@ -1,4 +1,3 @@
-import SkeletonPlaceholder from "expo-react-native-skeleton-placeholder";
 import { View, Text, StyleSheet } from "react-native";
 import {
   borderColor,
@@ -55,11 +54,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
     width: 180,
     height: 24,
+    backgroundColor: defaultImageBgColor
   },
   examSubHeader: {
     height: 18,
     width: 80,
     marginTop: 8,
+    backgroundColor: defaultImageBgColor
   },
   examContent: {
     flexDirection: "row",
@@ -68,6 +69,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     height: 24,
     width: 80,
+    backgroundColor: defaultImageBgColor
   },
   row: {
     flexDirection: "row",

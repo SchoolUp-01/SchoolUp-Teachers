@@ -1,39 +1,42 @@
-import SkeletonPlaceholder from "expo-react-native-skeleton-placeholder";
 import { View, StyleSheet, Dimensions } from "react-native";
 import {
   borderColor,
   borderWidth,
   defaultImageBgColor,
 } from "../../utils/Color";
-const { width, height } = new Dimensions.get("screen");
+import SkeletonLoading from "./SkeletonLoader";
+const { width } = new Dimensions.get("screen");
 export default function SchoolInformationScreenShimmer() {
-  const MenuItem = () => {
-    return <View style={{ width: 64, height: 64 }} />;
-  };
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
-      <SkeletonPlaceholder borderRadius={4}>
+      <SkeletonLoading borderRadius={4}>
         <View style={styles.galleryView} />
         <View style={styles.studentView}>
           <View style={styles.middleView}>
             <View
               style={{
                 height: 12,
-                width: 160,
+                width: 160
+                ,backgroundColor: defaultImageBgColor
+
               }}
             />
             <View
               style={{
                 height: 24,
                 width: width - 32,
-                marginTop: 8,
+                marginTop: 8
+                ,backgroundColor: defaultImageBgColor
+
               }}
             />
             <View
               style={{
                 height: 24,
                 width: 120,
-                marginTop: 4,
+                marginTop: 4
+                ,backgroundColor: defaultImageBgColor
+
               }}
             />
             <View
@@ -41,13 +44,17 @@ export default function SchoolInformationScreenShimmer() {
                 height: 16,
                 width: width - 32,
                 marginTop: 16,
+                backgroundColor: defaultImageBgColor
+
               }}
             />
             <View
               style={{
                 height: 16,
                 width: width - 32,
-                marginTop: 4,
+                marginTop: 4
+                ,backgroundColor: defaultImageBgColor
+
               }}
             />
             <View
@@ -55,19 +62,33 @@ export default function SchoolInformationScreenShimmer() {
                 height: 16,
                 width: 120,
                 marginTop: 4,
+                backgroundColor: defaultImageBgColor
+
               }}
             />
           </View>
         </View>
-        <View style={{ flexDirection: "row", marginBottom: 16 }}>
+        <View style={{ flexDirection: "row", marginBottom: 16
+                ,backgroundColor: defaultImageBgColor
+
+         }}>
           <View
-            style={{ width: 80, height: 24, borderRadius: 8, marginEnd: 16 }}
+            style={{ width: 80, height: 24, borderRadius: 8, marginEnd: 16 
+              ,backgroundColor: defaultImageBgColor
+
+            }}
           />
           <View
-            style={{ width: 80, height: 24, borderRadius: 8, marginEnd: 16 }}
+            style={{ width: 80, height: 24, borderRadius: 8, marginEnd: 16 
+              ,backgroundColor: defaultImageBgColor
+
+            }}
           />
           <View
-            style={{ width: 80, height: 24, borderRadius: 8, marginEnd: 16 }}
+            style={{ width: 80, height: 24, borderRadius: 8, marginEnd: 16
+              ,backgroundColor: defaultImageBgColor
+
+             }}
           />
         </View>
         <View
@@ -90,9 +111,15 @@ export default function SchoolInformationScreenShimmer() {
             }}
           />
           <View>
-            <View style={{ width: width - 184, height: 20, marginStart: 16 }} />
+            <View style={{ width: width - 184, height: 20, marginStart: 16
+                ,backgroundColor: defaultImageBgColor
+
+             }} />
             <View
-              style={{ width: 120, height: 20, marginStart: 16, marginTop: 4 }}
+              style={{ width: 120, height: 20, marginStart: 16, marginTop: 4
+                ,backgroundColor: defaultImageBgColor
+
+               }}
             />
             <View
               style={{
@@ -103,44 +130,10 @@ export default function SchoolInformationScreenShimmer() {
               }}
             />
             <View
-              style={{ width: 120, height: 16, marginStart: 16, marginTop: 2 }}
-            />
-          </View>
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            marginBottom: 16,
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            borderRadius: 8,
-            borderWidth: borderWidth,
-            borderColor: borderColor,
-          }}
-        >
-          <View
-            style={{
-              width: 120,
-              height: 80,
-              borderRadius: 4,
-              alignSelf: "center",
-            }}
-          />
-          <View>
-            <View style={{ width: width - 184, height: 20, marginStart: 16 }} />
-            <View
-              style={{ width: 120, height: 20, marginStart: 16, marginTop: 4 }}
-            />
-            <View
-              style={{
-                width: width - 184,
-                height: 16,
-                marginStart: 16,
-                marginTop: 8,
+              style={{ width: 120, height: 16, marginStart: 16, marginTop: 2 
+                ,backgroundColor: defaultImageBgColor
+
               }}
-            />
-            <View
-              style={{ width: 120, height: 16, marginStart: 16, marginTop: 2 }}
             />
           </View>
         </View>
@@ -164,9 +157,15 @@ export default function SchoolInformationScreenShimmer() {
             }}
           />
           <View>
-            <View style={{ width: width - 184, height: 20, marginStart: 16 }} />
+            <View style={{ width: width - 184, height: 20, marginStart: 16
+                ,backgroundColor: defaultImageBgColor
+
+             }} />
             <View
-              style={{ width: 120, height: 20, marginStart: 16, marginTop: 4 }}
+              style={{ width: 120, height: 20, marginStart: 16, marginTop: 4
+                ,backgroundColor: defaultImageBgColor
+
+               }}
             />
             <View
               style={{
@@ -177,12 +176,62 @@ export default function SchoolInformationScreenShimmer() {
               }}
             />
             <View
-              style={{ width: 120, height: 16, marginStart: 16, marginTop: 2 }}
+              style={{ width: 120, height: 16, marginStart: 16, marginTop: 2
+                ,backgroundColor: defaultImageBgColor
+
+               }}
+            />
+          </View>
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            marginBottom: 16,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: 8,
+            borderWidth: borderWidth,
+            borderColor: borderColor,
+          }}
+        >
+          <View
+            style={{
+              width: 120,
+              height: 80,
+              borderRadius: 4,
+              alignSelf: "center",
+            }}
+          />
+          <View>
+            <View style={{ width: width - 184, height: 20, marginStart: 16 
+                ,backgroundColor: defaultImageBgColor
+
+            }} />
+            <View
+              style={{ width: 120, height: 20, marginStart: 16, marginTop: 4 
+                ,backgroundColor: defaultImageBgColor
+
+              }}
+            />
+            <View
+              style={{
+                width: width - 184,
+                height: 16,
+                marginStart: 16,
+                marginTop: 8,
+                backgroundColor: defaultImageBgColor
+
+              }}
+            />
+            <View
+              style={{ width: 120, height: 16, marginStart: 16, marginTop: 2
+                ,backgroundColor: defaultImageBgColor
+               }}
             />
           </View>
         </View>
        
-      </SkeletonPlaceholder>
+      </SkeletonLoading>
     </View>
   );
 }
@@ -194,6 +243,7 @@ const styles = StyleSheet.create({
     height: 220,
     alignSelf: "center",
     marginBottom: 16,
+    backgroundColor: defaultImageBgColor
   },
   studentView: {
     flexDirection: "row",

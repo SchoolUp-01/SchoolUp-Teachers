@@ -107,3 +107,49 @@ export function convertToIST(currentDate) {
 
   return istDate;
 }
+export function convertDate(dateString) {
+  if(dateString === null) return 'No date'
+  const date = new Date(dateString);
+
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const month = monthNames[date.getMonth()];
+
+  const day = date.getDate().toString().padStart(2, "0");
+
+  const year = date.getFullYear();
+
+  return `${month} ${day}, ${year}`;
+}
+
+export function formatTime(timeString) {
+  console.log("TimeString: ",timeString)
+  if(timeString.includes("AM") || timeString.includes('PM')) return timeString
+  // Create a Date object. We use an arbitrary date (2000-01-01) to ensure consistency.
+  const date = new Date(`2000-01-01T${timeString}`);
+
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    throw new Error('Invalid time format');
+  }
+
+  // Format the time
+  return date.toLocaleString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  }).replace(',', ''); // Remove comma that toLocaleString adds in some implementations
+}

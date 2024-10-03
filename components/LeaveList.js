@@ -54,6 +54,7 @@ export default function LeaveList({ onLeaveClicked }) {
   };
 
   const renderHeader = () => {
+    return null
     if (leaveList.length !== 0)
       return (
         <View style={{ height: 56 }}>

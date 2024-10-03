@@ -1,6 +1,7 @@
 export const parent_info_db = "parent_info";
 export const student_info_db = "student_info";
 export const teacher_info_db = "teacher_info";
+export const team_info_db = "team_info";
 export const teacher_notification_info_db = "teacher_notification_info";
 export const school_info_db = "school_info";
 export const holiday_calendar_db = "holiday_calendar";

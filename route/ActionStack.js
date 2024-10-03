@@ -37,6 +37,8 @@ import UpdateConcernScreen from "../screen/UpdateConcernScreen";
 import ManageClassroomScreen from "../screen/ManageClassroomScreen";
 import EditMemoriesScreen from "../screen/EditMemoriesScreen";
 import UpdateBiometricScreen from "../screen/UpdateBiometricScreen";
+import ExamDetailsScreen from "../screen/ExamDetailsScreen";
+import ExamPortionScreen from "../screen/ExamPortionScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -107,6 +109,8 @@ const ActionStack = () => {
       <Stack.Screen name="ManageClassroomScreen" component={ManageClassroomScreen} />
       <Stack.Screen name="EditMemoriesScreen" component={EditMemoriesScreen} />
       <Stack.Screen name="UpdateBiometricScreen" component={UpdateBiometricScreen} />
+      <Stack.Screen name="ExamDetailsScreen" component={ExamDetailsScreen} />
+      <Stack.Screen name="ExamPortionScreen" component={ExamPortionScreen} />
     </Stack.Navigator>
   );
 };

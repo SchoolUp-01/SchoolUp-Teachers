@@ -1,10 +1,10 @@
-import SkeletonPlaceholder from "expo-react-native-skeleton-placeholder";
 import { View, Text, StyleSheet } from "react-native";
 import {
   borderColor,
   borderWidth,
   defaultImageBgColor,
 } from "../../utils/Color";
+import SkeletonLoading from "./SkeletonLoader";
 
 export default function AttendanceScreenShimmer() {
   const renderTeacherItem = () => {
@@ -27,19 +27,19 @@ export default function AttendanceScreenShimmer() {
       </View>
     );
   };
-  return <SkeletonPlaceholder borderRadius={4}>
+  return <SkeletonLoading borderRadius={4}>
     <View style={{marginHorizontal:16,marginVertical:8,flexDirection:"row",justifyContent:"space-between",alignItems:"center"}}>
       <View>
-        <View  style={{width:80,height:16}}/>
-        <View style={{width:80,height:12,marginTop:8}}/>
+        <View  style={{width:80,height:16,backgroundColor: defaultImageBgColor}}/>
+        <View style={{width:80,height:12,marginTop:8,backgroundColor: defaultImageBgColor}}/>
       </View>
       <View>
-        <View  style={{width:80,height:16}}/>
-        <View style={{width:80,height:12,marginTop:8}}/>
+        <View  style={{width:80,height:16,backgroundColor: defaultImageBgColor}}/>
+        <View style={{width:80,height:12,marginTop:8,backgroundColor: defaultImageBgColor}}/>
       </View>
       <View>
-        <View  style={{width:80,height:16}}/>
-        <View style={{width:80,height:12,marginTop:8}}/>
+        <View  style={{width:80,height:16,backgroundColor: defaultImageBgColor}}/>
+        <View style={{width:80,height:12,marginTop:8, backgroundColor: defaultImageBgColor}}/>
       </View>
     </View>
     {renderTeacherItem()}
@@ -50,7 +50,7 @@ export default function AttendanceScreenShimmer() {
     {renderTeacherItem()}
     {renderTeacherItem()}
     {renderTeacherItem()}
-  </SkeletonPlaceholder>;
+  </SkeletonLoading>;
 }
 
 const styles = StyleSheet.create({
@@ -70,11 +70,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
     width: 180,
     height: 24,
+    backgroundColor: defaultImageBgColor
   },
   examSubHeader: {
     height: 18,
     width: 80,
     marginTop: 8,
+    backgroundColor: defaultImageBgColor
   },
   examContent: {
     flexDirection: "row",
@@ -83,6 +85,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     height: 24,
     width: 80,
+    backgroundColor: defaultImageBgColor
   },
   row: {
     flexDirection: "row",

@@ -154,3 +154,30 @@ export const MeetingLabel =({label}) =>{
       </View>
   )
 }
+
+export const ItemLabel = ({label,color}) =>{
+  return(
+      <View
+        style={{
+          backgroundColor: color+"2a",
+          paddingHorizontal: 8,
+          paddingVertical: 2,
+          borderRadius: 4,
+          alignItems:"center",
+          justifyContent:"center",
+          alignSelf:"center"
+        }}
+      >
+        <Text
+          style={{
+            textAlign: "center",
+            fontFamily: "Inter-Medium",
+            fontSize: 12,
+            color: color,
+          }}
+        >
+          {label}
+        </Text>
+      </View>
+  )
+}

@@ -1,14 +1,14 @@
-import SkeletonPlaceholder from "expo-react-native-skeleton-placeholder";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
 import {
   borderColor,
   borderWidth,
   defaultImageBgColor,
 } from "../../utils/Color";
-const { width, height } = new Dimensions.get("screen");
+import SkeletonLoading from "./SkeletonLoader";
+const { width } = new Dimensions.get("screen");
 export default function StudentInfoShimmer() {
   return (
-    <SkeletonPlaceholder borderRadius={4}>
+    <SkeletonLoading borderRadius={4}>
       <View style={styles.examView}>
         <View
           style={{
@@ -111,7 +111,7 @@ export default function StudentInfoShimmer() {
         <View style={{ width: width - 32, height: 40, marginTop: 12 }} />
         <View style={{ width: width - 32, height: 40, marginTop: 12 }} />
       </View>
-    </SkeletonPlaceholder>
+    </SkeletonLoading>
   );
 }
 
@@ -128,11 +128,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
     width: 160,
     height: 20,
+    backgroundColor: defaultImageBgColor
   },
   examSubHeader: {
     height: 18,
     width: 120,
     marginTop: 8,
+    backgroundColor: defaultImageBgColor
+
   },
   examContent: {
     flexDirection: "row",
@@ -141,6 +144,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     height: 24,
     width: 80,
+    backgroundColor: defaultImageBgColor
+
   },
   row: {
     flexDirection: "row",
@@ -155,5 +160,7 @@ const styles = StyleSheet.create({
   headerText: {
     lineHeight: 24,
     width: 80,
+    backgroundColor: defaultImageBgColor
+
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -20,10 +20,47 @@ import {
   underlayColor,
 } from "../utils/Color";
 
-const StudentAcademicReportItem = ({ item,index,ref,handleNext }) => {
+const StudentAcademicReportItem = ({
+  item,
+  index,
+  ref,
+  handleNext,
+  onReportUpdate,
+  maxMarks, // Pass the maximum marks for validation
+  error=false,
+}) => {
+  const [marks, setMarks] = useState(""); // State for marks input
+  const [remarks, setRemarks] = useState(""); // State for remarks input
   const [marksFocused, setMarksFocused] = useState(false);
   const [remarksFocused, setRemarksFocused] = useState(false);
   const [isRemarkVisible, setIsRemarkVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(error?"Marks cannot be empty!":null); // State for error message
+
+  useEffect(() => {
+    
+  //generator a random number betweem -1 to maxMarks and call onMarksChange for the same
+  const randomMarks = Math.floor(Math.random() * (maxMarks + 2)) - 1; // Random between -1 and maxMarks
+  onMarksChange(randomMarks.toString());
+  }, [])
+  
+  // Function to handle marks change
+  const onMarksChange = (value) => {
+    const enteredMarks = parseFloat(value);
+    if (enteredMarks >= -1 && enteredMarks <= maxMarks) {
+      setMarks(value);
+      setErrorMessage(null); // Clear error message if valid
+      onReportUpdate(item.id, value, remarks); // Call callback with updated data
+    } else {
+      setErrorMessage(`Marks should be between -1 and ${maxMarks}`);
+      setMarks(value)
+    }
+  };
+
+  // Function to handle remarks change
+  const onRemarksChange = (value) => {
+    setRemarks(value);
+    onReportUpdate(item.id, marks, value); // Call callback with updated data
+  };
 
   return (
     <View style={styles.itemContainer}>
@@ -42,9 +79,8 @@ const StudentAcademicReportItem = ({ item,index,ref,handleNext }) => {
             marginEnd: 16,
             borderWidth: borderWidth,
             borderColor: borderColor,
-            backgroundColor:defaultImageBgColor
+            backgroundColor: defaultImageBgColor,
           }}
-          // source={{ uri: avatar }}
           defaultSource={require("../assets/DefaultImage.jpg")}
         />
         <View style={{ alignSelf: "center", flex: 1 }}>
@@ -68,6 +104,7 @@ const StudentAcademicReportItem = ({ item,index,ref,handleNext }) => {
           </Text>
         </TouchableOpacity>
       </View>
+      
       <TextInput
         ref={ref}
         style={[
@@ -77,17 +114,24 @@ const StudentAcademicReportItem = ({ item,index,ref,handleNext }) => {
             borderWidth: marksFocused ? 1 : itemBorder,
           },
         ]}
-        // keyboardType="numeric"
+        keyboardType="numeric"
         selectionColor={primaryColor}
         onSubmitEditing={() => handleNext(index)}
-        placeholder={` Enter mark here`}
+        placeholder={` Enter mark (Max ${maxMarks})`}
         placeholderTextColor={borderColor ?? underlayColor}
+        value={marks}
         onFocus={() => setMarksFocused(true)}
         onBlur={() => setMarksFocused(false)}
+        onChangeText={onMarksChange} // Call onMarksChange on text change
       />
+
+      {/* Display error message if the marks are invalid */}
+      {errorMessage && (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      )}
+
       {isRemarkVisible && (
         <TextInput
-          // ref={inputRefs.current[index]}
           style={[
             styles.input,
             {
@@ -102,10 +146,12 @@ const StudentAcademicReportItem = ({ item,index,ref,handleNext }) => {
           placeholderTextColor={borderColor ?? underlayColor}
           keyboardType="default"
           multiline
-          onSubmitEditing={() => handleFocusNextInput(index)}
+          onSubmitEditing={() => handleNext(index)}
           selectionColor={primaryColor}
           onFocus={() => setRemarksFocused(true)}
           onBlur={() => setRemarksFocused(false)}
+          value={remarks}
+          onChangeText={onRemarksChange} // Call onRemarksChange on text change
         />
       )}
     </View>
@@ -143,6 +189,12 @@ const styles = StyleSheet.create({
     borderWidth: borderWidth,
     marginTop: 12,
     textAlignVertical: "center",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 12,
+    marginTop: 4,
+    fontFamily: "RHD-Medium",
   },
 });
 

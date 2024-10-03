@@ -89,38 +89,6 @@ const ConcernScreen = () => {
     );
   };
 
-  const TabItem = ({ item }) => {
-    return (
-      <TouchableOpacity
-        style={{ alignSelf: "center", justifyContent: "center", flex: 1 }}
-        onPress={() => {
-          pagerRef.current.setPage(tabList.indexOf(item));
-        }}
-      >
-        <View
-          style={[
-            styles.tabItem,
-            {
-              borderColor: item == tab ? primaryColor : borderColor,
-              borderBottomWidth: item == tab ? 1 : 0,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              {
-                color: item == tab ? primaryColor : primaryText,
-                fontFamily: item == tab ? "RHD-Bold" : "RHD-Medium",
-              },
-            ]}
-          >
-            {item}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
 
   const renderHeader = () => {
     return (

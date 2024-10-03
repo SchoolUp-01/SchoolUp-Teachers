@@ -1,10 +1,10 @@
-import SkeletonPlaceholder from "expo-react-native-skeleton-placeholder";
 import { View, Text, StyleSheet } from "react-native";
 import {
   borderColor,
   borderWidth,
   defaultImageBgColor,
 } from "../../utils/Color";
+import SkeletonLoading from "./SkeletonLoader";
 
 export default function AnnouncementShimmer() {
   const renderItem = () => {
@@ -33,11 +33,11 @@ export default function AnnouncementShimmer() {
     );
   };
   return (
-    <SkeletonPlaceholder borderRadius={4}>
+    <SkeletonLoading borderRadius={4}>
       {renderItem()}
       {renderItem()}
       {renderItem()}
-    </SkeletonPlaceholder>
+    </SkeletonLoading>
   );
 }
 
@@ -53,16 +53,22 @@ const styles = StyleSheet.create({
   headerText: {
     width: 120,
     height: 20,
+    backgroundColor: defaultImageBgColor
+
   },
   subText: {
     width: 160,
     height: 16,
     marginTop: 4,
+    backgroundColor: defaultImageBgColor
+
   },
   editView: {
     width: 80,
     height: 20,
     borderRadius: 4,
+    backgroundColor: defaultImageBgColor
+
   },
   infoView: {
     marginHorizontal: 16,
@@ -71,6 +77,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingBottom: 8,
     marginVertical: 8,
+    backgroundColor: defaultImageBgColor
+
   },
   previewImage: {
     alignItems: "center",
@@ -80,5 +88,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
     marginBottom: 8,
+    backgroundColor: defaultImageBgColor
   },
 });

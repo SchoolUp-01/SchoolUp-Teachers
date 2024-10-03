@@ -1,11 +1,11 @@
-import SkeletonPlaceholder from "expo-react-native-skeleton-placeholder";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
-import { borderColor, primaryColor, primaryColor_800 } from "../../utils/Color";
+import { borderColor, defaultImageBgColor, primaryColor, primaryColor_800 } from "../../utils/Color";
+import SkeletonLoading from "./SkeletonLoader";
 
 export default function ExamScreenShimmer() {
   return (
     <View>
-      <SkeletonPlaceholder borderRadius={4}>
+      <SkeletonLoading borderRadius={4}>
         <View style={styles.examView}>
           <View>
             <View style={styles.examHeader} />
@@ -13,7 +13,7 @@ export default function ExamScreenShimmer() {
           </View>
           <View style={styles.examContent}></View>
         </View>
-      </SkeletonPlaceholder>
+      </SkeletonLoading>
       <View style={{marginTop:160}}>
         <ActivityIndicator size={24} color={primaryColor} />
         <Text
@@ -43,11 +43,14 @@ const styles = StyleSheet.create({
   examHeader: {
     width: 180,
     height: 24,
+    backgroundColor: defaultImageBgColor
   },
   examSubHeader: {
     height: 18,
     width: 80,
     marginTop: 8,
+    backgroundColor: defaultImageBgColor
+
   },
   examContent: {
     flexDirection: "row",
@@ -56,6 +59,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     height: 24,
     width: 80,
+    backgroundColor: defaultImageBgColor
+
   },
   row: {
     flexDirection: "row",
@@ -70,5 +75,7 @@ const styles = StyleSheet.create({
   headerText: {
     lineHeight: 24,
     width: 80,
+    backgroundColor: defaultImageBgColor
+
   },
 });

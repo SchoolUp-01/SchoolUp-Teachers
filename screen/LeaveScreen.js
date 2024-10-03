@@ -3,15 +3,11 @@ import { Container, ContentView } from "../components/styledComponents";
 import CustomStatusBarView from "../components/CustomStatusBarView";
 import { BasicToolBar } from "../components/ToolBarLayout";
 import { useNavigation } from "@react-navigation/native";
-import EmptyState from "../components/EmptyState";
-import LeaveRequestItem from "../components/LeaveRequestItem";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
-  FlatList,
 } from "react-native";
 import {
   borderColor,

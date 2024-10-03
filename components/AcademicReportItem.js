@@ -1,26 +1,91 @@
 import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
-import { borderColor, borderWidth, primaryColor } from "../utils/Color";
+import { borderColor, borderWidth, primaryColor, primaryText } from "../utils/Color";
 import { useNavigation } from "@react-navigation/native";
-
+import { convertDate } from "../utils/DateUtils";
+import { Feather } from "@expo/vector-icons";
+import ErrorLogger from "../utils/ErrorLogger";
+import { ItemLabel } from "./Label";
+import supabase_api from "../backend/supabase_api";
+const statusColors = {
+  "Setup Required": "#FF6347", // Tomato Red
+  Upcoming: "#FFA500", // Orange
+  Active: "#32CD32", // Lime Green
+  "Evaluation In-Progress": "#1E90FF", // Dodger Blue
+  Completed: "#6A5ACD", // Slate Blue
+};
 export default function AcademicReportItem({ item }) {
   const navigation = useNavigation();
   if (item === null) return;
+
+  const getActiveClassesCount = (class_data, status) =>
+    class_data?.filter((item) => item.status !== status)?.length;
+
+  const updateExamStatus = async (status, exam_id) => {
+    try {
+      const response = await supabase_api.shared.updateExam(
+        {
+          status,
+        },
+        exam_id
+      );
+    } catch (error) {
+      ErrorLogger.shared.ShowError("ExamsList: updateExamStatus: ", error);
+    }
+  };
+  
+  const getStatusLabelAndColor = (
+    startDate,
+    endDate,
+    status,
+    class_data,
+    exam_id
+  ) => {
+    const today = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    let label = status;
+    if (status === "Setup Required") {
+      const setUpCount = getActiveClassesCount(class_data,"Active");
+      console.log("Active: ",setUpCount)
+      if (setUpCount == 0) {
+        label = "Upcoming";
+        updateExamStatus(label, exam_id);
+      } else {
+        label = "Setup Required";
+      }
+    } else if (status === "Upcoming") {
+      if (today >= start && today <= end) {
+        label = "Active";
+        updateExamStatus(label, exam_id);
+      }
+    } else if (status === "Active") {
+      if (today > end) {
+        label = "Evaluation In-Progress";
+        updateExamStatus(label, exam_id);
+      }
+    } else if (status === "Evaluation In-Progress") {
+      const setUpCount = getActiveClassesCount(class_data,"Completed");
+      if (setUpCount == 0) {
+        label = "Completed";
+        updateExamStatus(label, exam_id);
+      }else{
+        label = 'Evaluation In-Progress';
+      }
+    } else if (status === "Completed") {
+      label = "Completed";
+    }
+    return <ItemLabel color={statusColors[label]} label={label} />;
+  };
+
+
   const {
-    exam_id,
-    exam_info: { id: exam_info_id, title: exam_title },
-    subject_id,
-    subject_info: {
-      class_id,
-      class_info: { id: class_info_id, section, standard },
-      subject,
-      teacher_id,
-    },
+    id,title,note,start_date,end_date,status,class_data
   } = item;
   return (
     <TouchableOpacity
       onPress={() => {
-        navigation.navigate("UpdateReportsScreen", {
-          item: item,
+        navigation.navigate("ExamDetailsScreen", {
+          examDetails: item,
         })
       }}
     >
@@ -33,22 +98,23 @@ export default function AcademicReportItem({ item }) {
             marginLeft: 12,
           }}
         >
-          <Text style={styles.leaveType}>{subject}</Text>
+          <Text style={styles.leaveType}>{title}</Text>
 
           <Text style={styles.leaveReason} numberOfLines={1}>
-            {exam_title} • {standard + section}
+           {convertDate(start_date)+ " - "+convertDate(end_date)}
           </Text>
         </View>
+       {getStatusLabelAndColor(start_date,end_date,status,class_data,id)}
         <View style={{ alignSelf: "center" }}>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() =>
-              navigation.navigate("UpdateReportsScreen", {
-                item: item,
+            onPress={() => //UpdateReportsScreen
+              navigation.navigate("ExamDetailsScreen", {
+                examDetails: item,
               })
             }
           >
-            <Text style={styles.addButtonLabel}>Update</Text>
+            <Feather name="chevron-right" size={24} color={primaryText}/>
           </TouchableOpacity>
         </View>
       </View>
@@ -101,7 +167,6 @@ const styles = StyleSheet.create({
   },
   addButton: {
     borderRadius: 24,
-    backgroundColor: primaryColor,
     paddingVertical: 8,
     alignItems: "center",
     marginHorizontal: 16,

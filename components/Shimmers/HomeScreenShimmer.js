@@ -1,18 +1,15 @@
-import SkeletonPlaceholder from "expo-react-native-skeleton-placeholder";
 import { View, StyleSheet, Dimensions } from "react-native";
 import {
   borderColor,
   borderWidth,
   defaultImageBgColor,
 } from "../../utils/Color";
-const { width, height } = new Dimensions.get("screen");
+import SkeletonLoading from "./SkeletonLoader";
+const { width } = new Dimensions.get("screen");
 export default function HomeScreenShimmer() {
-  const MenuItem = () => {
-    return <View style={{ width: 64, height: 64 }} />;
-  };
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
-      <SkeletonPlaceholder borderRadius={4}>
+      <SkeletonLoading borderRadius={4}>
         <View style={styles.announcementView} />
         <View style={styles.studentView}>
           <View style={styles.avatar} />
@@ -59,7 +56,7 @@ export default function HomeScreenShimmer() {
           <View style={{ width: 64, height: 64 }} />
           <View style={{ width: 64, height: 64 }} />
         </View>
-      </SkeletonPlaceholder>
+      </SkeletonLoading>
     </View>
   );
 }
@@ -71,12 +68,15 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     width: width - 32,
     height: 152,
+    backgroundColor: defaultImageBgColor
   },
   studentView: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 8,
     marginVertical: 8,
+    backgroundColor: defaultImageBgColor
+
   },
   avatar: {
     width: 36,
@@ -95,6 +95,8 @@ const styles = StyleSheet.create({
     borderColor: borderColor,
     borderRadius: 8,
     width: width - 32,
+    backgroundColor: defaultImageBgColor
+
   },
   recentView: {
     flexDirection: "row",
@@ -105,6 +107,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingVertical: 8,
     alignItems:'center',
-    justifyContent:"space-evenly"
+    justifyContent:"space-evenly",
+    backgroundColor: defaultImageBgColor
+
   },
 });

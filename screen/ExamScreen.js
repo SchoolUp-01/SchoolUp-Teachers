@@ -34,7 +34,6 @@ const ExamScreen = () => {
       .getExamTimeTable()
       .then((res) => {
         setExamDetails(res);
-        getTimeTableDetails(res?.id);
       })
       .catch((error) => {
         ErrorLogger.shared.ShowError("ExamScreen: getExamTimeTable: ", error);
@@ -43,22 +42,6 @@ const ExamScreen = () => {
     return () => {};
   }, []);
 
-  const getTimeTableDetails = (examID) => {
-    if (examID != null) {
-      supabase_api.shared
-        .getExamTimeTableDetails(examID)
-        .then((res) => {
-          console.log("TImeTable: ", res);
-          setExamTimeTable(res);
-        })
-        .catch((error) => {
-          ErrorLogger.shared.ShowError(
-            "ExamScreen: getExamTimeTableDetails: ",
-            error
-          );
-        });
-    }
-  };
 
   const MarksHeader = ({}) => {
     return (

@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "scheme": "schoolup",
     "orientation": "portrait",
-    "icon": "./assets/logos/2.png",
+    "icon": "./assets/icon_new.png",
     "userInterfaceStyle": "automatic",
     "updates": {
       "fallbackToCacheTimeout": 0
@@ -54,7 +54,6 @@
         }
       ],
       "splash": {
-       
         "resizeMode": "cover",
         "backgroundColor": "#df5520"
       }
@@ -92,9 +91,9 @@
         "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 33,
-            "targetSdkVersion": 33,
-            "buildToolsVersion": "33.0.0"
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "buildToolsVersion": "34.0.0"
           }
         }
       ],
@@ -104,12 +103,14 @@
           "cameraPermission": "Allow Stage to access your camera.",
           "microphonePermission": "Allow Stage to access your camera."
         }
-      ],[
+      ],
+      [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

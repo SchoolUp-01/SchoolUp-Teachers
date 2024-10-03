@@ -28,6 +28,7 @@ import {
   subject_report_info_db,
   teacher_info_db,
   teacher_notification_info_db,
+  team_info_db,
   timetable_info_db,
 } from "../utils/Constants";
 import Teacher from "../state/TeacherManager";
@@ -694,6 +695,51 @@ class supabase_api {
     });
   };
 
+  getExamInfo = async() =>{
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase
+      .from(exam_info_db)
+      .select(
+        "id,title,note,start_date,end_date,status,class_data")
+        .eq("school_id",Teacher.shared.getSchoolID())
+        if (error) rej(error);
+        else {
+          res(data);
+          }
+          });
+
+
+
+  }
+
+  async updateExam(values,exam_id) {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase.from(exam_info_db).update(values)
+      .eq('id',exam_id);
+      if (error) rej(error);
+      res(data);
+    });
+  }
+
+  async updateExamTimeTableInfo(values,exam_id,subject_id) {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase.from(exam_timetable_info_db).update(values)
+      .match({'exam_id':exam_id,"subject_id":subject_id});
+      if (error) rej(error);
+      res(data);
+    });
+  }
+
+  async getClassDetailsFromExam(exam_id) {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase.rpc('fetch_exam_details_by_exam_id',{
+        exam_id_input: exam_id
+      })
+      if (error) rej(error);
+      res(data);
+    });
+  }
+
   getIncompleteAcademicReportInfo = async () => {
     return new Promise(async (res, rej) => {
       const { data, error } = await supabase
@@ -849,7 +895,7 @@ class supabase_api {
       }
       console.log("user: ", userID);
       const { data, error } = await supabase
-        .from(teacher_info_db)
+        .from(team_info_db)
         .select(
           "id,name,avatar,school_id,phone_number,email_id,school_info(name,avatar)"
         )
