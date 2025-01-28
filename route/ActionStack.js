@@ -54,10 +54,7 @@ const ActionStack = () => {
       <Stack.Screen name="UpdateTaskScreen" component={UpdateTaskScreen} />
       <Stack.Screen name="ViewTaskScreen" component={ViewTaskScreen} />
       <Stack.Screen name="TeachersScreen" component={TeachersScreen} />
-      <Stack.Screen
-        name="ParentsCommunicationScreen"
-        component={ParentsCommunicationScreen}
-      />
+      
       <Stack.Screen name="LessonPlansScreen" component={LessonPlanScreen} />
       <Stack.Screen name="SubjectTopicScreen" component={SubjectTopicScreen} />
       <Stack.Screen name="ExamScreen" component={ExamScreen} />
@@ -111,6 +108,7 @@ const ActionStack = () => {
       <Stack.Screen name="UpdateBiometricScreen" component={UpdateBiometricScreen} />
       <Stack.Screen name="ExamDetailsScreen" component={ExamDetailsScreen} />
       <Stack.Screen name="ExamPortionScreen" component={ExamPortionScreen} />
+      <Stack.Screen name="ParentsCommunicationScreen" component={ParentsCommunicationScreen} />
     </Stack.Navigator>
   );
 };

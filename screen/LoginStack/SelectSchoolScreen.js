@@ -28,6 +28,7 @@ import { useNavigation } from "@react-navigation/native";
 import supabase_api from "../../backend/supabase_api";
 import StudentDetailsTab from "../../components/TeachersDetailsTab";
 import ErrorLogger from "../../utils/ErrorLogger";
+import InAppNotification from "../../utils/InAppNotification";
 
 const { width, height } = new Dimensions.get("screen");
 export default function SelectSchoolScreen() {
@@ -96,33 +97,23 @@ export default function SelectSchoolScreen() {
     setButtonDisabled(schoolID == "" || text == "");
   };
 
-  const handleFindStudent = async () => {
+  const handleFindSchool = async () => {
     if (buttonDisabled) return;
     setLoading(true);
     setStudentAddedError(false);
     setStudentInfoError(false);
-    supabase_api.shared
-      .getStudentDetailsWithVerification(
-        schoolID,
-        schoolName,
-        "id,name,avatar,class_info!inner(id,standard,section,classteacher_id,teacher_info(name,avatar)),school_info!inner(id,name)"
-      )
-      .then((res) => {
-        if (res === null) setStudentInfoError(true);
-        else {
-          setStudentInfo(res);
-          let alreadyAdded = Student.shared.isAlreadyAdded(schoolID);
-          setButtonDisabled(alreadyAdded);
-          if (alreadyAdded) setStudentAddedError(true);
-        }
+    const match = await supabase_api.shared.matchSchoolNameAndID(schoolName,schoolID);
+    if(match){
+      const uid = await supabase_api.shared.uid ;
+      await supabase_api.shared.updateTeamDetails(uid,{school_id:schoolID});
+      InAppNotification.shared.showSuccessNotification({
+        title: "School Updated Successfully!",
+        description: `School ${schoolName} selected successfully.`,
       })
-      .catch((error) => {
-        ErrorLogger.shared.ShowError(
-          "SelectSchoolScreen: handleFindStudent: ",
-          error
-        );
-      })
-      .finally(() => setLoading(false));
+      navigation.navigate('HomeScreen')
+    }else{
+      setError("School name and ID do not match");
+    }
   };
 
   const AddStudentToParentList = () => {
@@ -197,7 +188,7 @@ export default function SelectSchoolScreen() {
                 },
               ]}
               onChangeText={(text) => handleSchoolNameChange(text)}
-              onSubmitEditing={() => handleFindStudent()}
+              onSubmitEditing={() => handleFindSchool()}
               value={schoolName}
               selectionColor={studentError ? "#ff0033" : primaryColor}
               autoCapitalize="none"
@@ -292,7 +283,7 @@ export default function SelectSchoolScreen() {
               disabled={loading}
               onPress={() => {
                 studentInfo == ""
-                  ? handleFindStudent()
+                  ? handleFindSchool()
                   : AddStudentToParentList();
               }}
             >

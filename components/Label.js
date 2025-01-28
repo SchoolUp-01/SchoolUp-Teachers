@@ -160,8 +160,8 @@ export const ItemLabel = ({label,color}) =>{
       <View
         style={{
           backgroundColor: color+"2a",
-          paddingHorizontal: 8,
-          paddingVertical: 2,
+          paddingHorizontal: 12,
+          paddingVertical: 4,
           borderRadius: 4,
           alignItems:"center",
           justifyContent:"center",
@@ -171,9 +171,71 @@ export const ItemLabel = ({label,color}) =>{
         <Text
           style={{
             textAlign: "center",
-            fontFamily: "Inter-Medium",
-            fontSize: 12,
+            fontFamily: "RHD-Medium",
+            fontSize: 14,
             color: color,
+            lineHeight:21
+          }}
+        >
+          {label}
+        </Text>
+      </View>
+  )
+}
+export const InformedLabel =({label}) =>{
+  return(
+      <View
+        style={{
+          width: 90,
+          backgroundColor: "#0968e52a",
+          paddingHorizontal: 8,
+          paddingVertical: 2,
+          borderRadius: 4,
+          marginEnd: 16,
+          alignItems:"center",
+          justifyContent:"center",
+          height:36,
+          alignSelf:"center"
+        }}
+      >
+        <Text
+          style={{
+            textAlign: "center",
+            fontFamily: "RHD-Medium",
+            fontSize: 14,
+            lineHeight: 21,
+            color: "#0968e5",
+          }}
+        >
+          {label}
+        </Text>
+      </View>
+  )
+}
+
+export const DeclinedLabel = ({label}) =>{
+  return(
+      <View
+        style={{
+          width: 90,
+          backgroundColor: "#ff00332a",
+          paddingHorizontal: 8,
+          paddingVertical: 2,
+          borderRadius: 4,
+          marginEnd: 16,
+          alignItems:"center",
+          justifyContent:"center",
+          height:36,
+          alignSelf:"center"
+        }}
+      >
+        <Text
+          style={{
+            textAlign: "center",
+            fontFamily: "RHD-Medium",
+            fontSize: 14,
+            lineHeight: 21,
+            color: "#ff0033",
           }}
         >
           {label}

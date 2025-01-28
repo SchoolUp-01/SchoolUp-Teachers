@@ -1,5 +1,14 @@
-import React, { useState, useEffect } from "react";
-
+import React, { useState, useCallback, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+  KeyboardAvoidingView,
+  ActivityIndicator,
+} from "react-native";
 import {
   Container,
   ContentView,
@@ -8,402 +17,279 @@ import {
   ToolbarBorder,
 } from "../components/styledComponents";
 import CustomStatusBarView from "../components/CustomStatusBarView";
+import Avatar from "../components/Avatar";
+import IssueCommentList from "../components/IssueCommentList.tsx";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  Platform,
-  Image,
-  Dimensions,
-  KeyboardAvoidingView,
-} from "react-native";
-import {
-  borderColor,
-  borderWidth,
-  defaultImageBgColor,
-  itemBorder,
-  itemColor,
-  primaryColor,
-  primaryColor_300,
-  primaryColor_50,
-  primaryColor_800,
-  primaryText,
-  secondaryText,
-} from "../utils/Color";
 import { Feather } from "@expo/vector-icons";
-import supabase_api from "../backend/supabase_api";
-import ErrorLogger from "../utils/ErrorLogger";
-import { InformationView } from "../components/Modals";
-import InAppNotification from "../utils/InAppNotification";
 import { formatDateWithTime } from "../utils/DateUtils";
-const { width, height } = new Dimensions.get("screen");
+import { getOrdinalSuffix } from "../utils/Number";
+import supabase_api from "../backend/supabase_api";
+import Teacher from "../state/TeacherManager";
+import ErrorLogger from "../utils/ErrorLogger";
+import InAppNotification from "../utils/InAppNotification";
+import { AddConcernClosureRemark, InformationView } from "../components/Modals";
+import { UserInformation } from "../components/InformationView";
+import { primaryColor } from "../utils/Color";
+import IssueResolvedCard from "../components/IssueResolveCard";
+import { supabase } from "../backend/supabaseClient";
+import { concern_info_db } from "../utils/Constants";
+
 const UpdateConcernScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const [taskInfo, setTaskInfo] = useState(route?.params?.item ?? null);
-  const [reason, setReason] = useState("");
-  const [reasonFocused, setReasonFocused] = useState(false);
-  const [leaveType, setLeaveType] = useState("General");
-  const [startDate, setStartDate] = useState(new Date());
-  const [showStartDate, setShowStartDate] = useState(false);
-  const [endDate, setEndDate] = useState(new Date());
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [showStudentDialog, setShowStudentDialog] = useState(false);
-  const [searchText, setSearchText] = useState("");
-  const [classInfoList, setClassInfoList] = useState([]);
-  const [searchList, setSearchList] = useState([]);
-  const [absentList, setAbsentList] = useState([]);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [showClosureModal, setShowClosureModal] = useState(false);
 
   useEffect(() => {
-    console.log("TaskInfo: ", taskInfo);
+    const updateTicketStatus = async () => {
+      if (taskInfo?.status === "New" && taskInfo?.id) {
+        try {
+          await supabase_api.shared.updateSupportTicket({
+            issueID: taskInfo.id,
+            values: { status: "Open" },
+          });
+        } catch (error) {
+          ErrorLogger.shared.ShowError(
+            "UpdateConcernScreen: updateSupportTicket: ",
+            error
+          );
+        }
+      }
+    };
 
-    return () => {};
-  }, []);
+     updateTicketStatus();
+     if (taskInfo !== null) {
+      const channels = realTimeListener();
+      return () => {
+        channels.unsubscribe();
+      };
+    }
+  }, [taskInfo]);
 
-  const handleSubmit = () => {
-    if (loading) return;
-    let absentees = absentList.map((item) => item.id);
-    console.log(absentees);
-    setLoading(true);
-    supabase_api.shared
-      .updateDailyTask(taskInfo.subject_id, null, absentees, taskInfo.id)
-      .then(() => {
-        InAppNotification.shared.showSuccessNotification({
-          title: "Task Updated Successfully",
-          description: "",
-        });
-        navigation.goBack();
-      })
-      .catch((error) => {
-        ErrorLogger.shared.ShowError("UpdateTaskScreen: handleSubmit: ", error);
-      })
-      .finally(() => setLoading(false));
-  };
+ 
 
-  const renderUser = (item) => {
-    if (item === null) return;
-    const { avatar, id, name, roll_no } = item;
-    return (
-      <View
-        key={item?.roll_no}
-        style={{
-          flexDirection: "row",
-          backgroundColor: itemColor,
-          borderWidth: itemBorder,
-          borderColor: borderColor,
-          paddingVertical: 4,
-          paddingHorizontal: 8,
-          marginEnd: 8,
-          borderRadius: 8,
-          marginBottom: 8,
-        }}
-      >
-        <Image
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: 10,
-            marginEnd: 8,
-            backgroundColor: defaultImageBgColor,
-          }}
-          defaultSource={require("../assets/DefaultImage.jpg")}
-        />
-        <Text style={{ color: primaryText, overflow: "hidden" }}>
-          {name + ", " + roll_no}
-        </Text>
-      </View>
-    );
-  };
+  const realTimeListener = useCallback(() => {
+    return supabase
+      .channel("concern-report-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: concern_info_db,
+          filter: `id=eq.${taskInfo?.id}`,
+        },
+        async (payload) => {
+          const { eventType, new: newRecord, old: oldRecord } = payload;
+          try {
+            switch (eventType) {
+              case "INSERT":
+                const newConcern =
+                  await supabase_api.shared.getConcernReportByID(newRecord?.id);
+                  setTaskInfo(newConcern)
+                break;
 
-  const renderStudent = (item, index) => {
-    if (item === null) return;
-    const { avatar, id, name, roll_no } = item;
-    return (
-      <View
-        key={roll_no}
-        style={{
-          alignItems: "center",
-          borderWidth: borderWidth,
-          borderColor: borderColor,
-          width: (width - 48) / 3,
-          height: (width - 48) / 3,
-          marginBottom: 8,
-          marginEnd: 8,
-          justifyContent: "center",
-          borderRadius: 8,
-        }}
-      >
-        <Image
-          style={{ width: 48, height: 48, marginBottom: 8, borderRadius: 24 }}
-          // source={{ uri: avatar }}
-          defaultSource={require("../assets/DefaultImage.jpg")}
-        />
-        <Text
-          style={{ fontFamily: "RHD-Medium", lineHeight: 21, fontSize: 14 }}
-          numberOfLines={2}
-        >
-          {name}
-        </Text>
-        <Text style={{ marginTop: 4 }}>{roll_no}</Text>
-      </View>
-    );
-  };
+              case "UPDATE":
+                const updatedConcern =
+                  await supabase_api.shared.getConcernReportByID(newRecord?.id);
+               setTaskInfo(updatedConcern)
+                break;
 
-  const searchStudents = (searchText) => {
-    setRefreshing(true);
-    setSearchText(searchText);
-    // Split the searchText by commas and trim each item
-    const allSearchTerms = searchText.split(",").map((term) => term.trim());
-    const searchTerms = allSearchTerms.filter((term) => term !== "");
+              case "DELETE":
+                navigation.goBack();
+                break;
+            }
+          } catch (error) {
+            ErrorLogger.shared.ShowError(
+              "ConcernScreen: realTimeListener: ",
+              error
+            );
+          }
+        }
+      )
+      .subscribe();
+  }, [taskInfo]);
 
-    if (
-      searchTerms.length === 0 ||
-      (searchTerms.length === 1 && searchTerms[0] === "")
-    ) {
-      setSearchList(classInfoList);
-      setRefreshing(false);
-    } else {
-      const filteredStudents = classInfoList.filter((student) => {
-        const nameMatch = searchTerms.some((term) =>
-          String(student.name)
-            .toLowerCase()
-            .includes(String(term).toLowerCase())
-        );
-        const rollNoMatch = searchTerms.includes(String(student.roll_no));
-        return rollNoMatch || nameMatch;
+  const onSubmit = async (message) => {
+    try {
+      const uid = await supabase_api.shared.uid;
+      const issueID = taskInfo?.id;
+      const result = await supabase_api.shared.updateSupportTicket({
+        issueID,
+        values: {
+          remarks: message,
+          status: "Closed",
+          closed_by: uid,
+          closed_on: new Date(),
+        },
       });
-      setSearchList(filteredStudents);
-      setRefreshing(false);
+      InAppNotification.shared.showSuccessNotification({
+        title: "Concern Ticket closed successfully",
+        description: "",
+      });
+    } catch (error) {
+      ErrorLogger.shared.ShowError(
+        "SupportRemarkModal: UpdateSupportTicket: ",
+        error
+      );
+      InAppNotification.shared.showErrorNotification({
+        title: "Something went wrong!",
+        description: "Please try again later",
+      });
+    } finally {
+      setShowClosureModal(false);
     }
   };
 
-  const toggleModal = () => {
-    setShowStudentDialog(false);
-  };
+  const handleSubmit = useCallback(() => {
+    if (!comment.trim()) return;
 
-  const renderComplaintDetails = () => {
-    if (taskInfo === null)
-      return <Text>Something went wrong, please try again.</Text>;
+    setSubmitting(true);
+    supabase_api.shared
+      .addIssueComment({
+        comment,
+        issueID: taskInfo?.id,
+        school_id: Teacher.shared.getSchoolID(),
+      })
+      .then(() => {
+        console.log("Comment added successfully");
+        setComment("");
+      })
+      .catch((error) => {
+        ErrorLogger.shared.ShowError("Issue: addComment: ", error);
+        InAppNotification.shared.showErrorNotification({
+          title: "Something went wrong!",
+          message: "Failed to add comment",
+        });
+      })
+      .finally(() => setSubmitting(false));
+  }, [comment, taskInfo?.id]);
+
+  const renderComplaintDetails = useCallback(() => {
+    if (!taskInfo) {
+      return (
+        <Text style={styles.errorText}>
+          Something went wrong. Please try again.
+        </Text>
+      );
+    }
+
     const {
-      id,
       created_at,
       type,
       reason,
-      remarks,
-      closed_on,
-      parent_info: { id: parentId, name: parentName, avatar: parentAvatar },
-      student_info: { id: studentId, name: studentName, avatar: studentAvatar },
+      parent_info: { name: parentName, avatar: parentAvatar },
+      student_info: {
+        name: studentName,
+        avatar: studentAvatar,
+        class_info: { section, standard },
+      },
+      status,
     } = taskInfo;
-    return (
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          justifyContent: "space-between",
-        }}
-      >
-        <InformationView label={"Type"} value={type} />
-        <InformationView label={"Class"} value={"3rd B Section"} />
 
-        <InformationView
-          label={"Created"}
-          value={formatDateWithTime(created_at)}
-        />
-        <InformationView
-          label={"Reason"}
-          value={reason}
-        />
+    return (
+      <View>
+        <View style={styles.header}>
+          <Avatar
+            width={48}
+            height={48}
+            user={{ name: studentName, avatar: studentAvatar }}
+          />
+          <View style={styles.studentInfo}>
+            <Text style={styles.studentName}>{studentName}</Text>
+            <Text style={styles.studentClass}>
+              {`${getOrdinalSuffix(standard)} ${section}`}
+            </Text>
+          </View>
+          <Text
+            style={[styles.status, { backgroundColor: getStatusColor(status) }]}
+          >
+            {status}
+          </Text>
+        </View>
+        <View style={styles.infoContainer}>
+          <InformationView label="Type" value={type} />
+          <InformationView label="Reason" value={reason} />
+          <UserInformation
+            title="Parent"
+            name={parentName}
+            avatar={parentAvatar}
+          />
+          <InformationView
+            label="Created"
+            value={formatDateWithTime(created_at)}
+          />
+        </View>
       </View>
     );
-  };
+  }, [taskInfo]);
 
   return (
     <Container>
       <CustomStatusBarView barStyle="dark-content" />
-      {/* <BottomModal isVisible={showStudentDialog} onClose={toggleModal}>
-        <View style={styles.searchView}>
-          <Feather name="search" size={16} color={secondaryText} />
-          <TextInput
-            style={styles.searchInput}
-            selectionColor={primaryColor}
-            placeholder="Search Students by name or roll no"
-            onChangeText={(search) => searchStudents(search)}
-            value={searchText}
-            autoCapitalize="none"
-          />
-          {searchText.length !== 0 && (
-            <TouchableOpacity onPress={() => setSearchText("")}>
-              <Feather name="x" size={16} color={secondaryText} />
-            </TouchableOpacity>
-          )}
-        </View>
-        <ScreenHint>
-          Select multiple students by entering their roll numbers separated by
-          commas. Example: 12, 24, 32
-        </ScreenHint>
-        <View style={{ height: (height * 1) / 2 }}>
-          <FlatList
-            nestedScrollEnabled
-            data={searchList}
-            renderItem={({ item, index }) => renderStudent(item, index)}
-            keyExtractor={(item) => item.roll_no.toString()}
-            numColumns={3} // Number of columns per row
-            contentContainerStyle={{
-              marginVertical: 16,
-              marginBottom: 16,
-            }}
-            refreshing={refreshing}
-          />
-        </View>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => {
-            setAbsentList(searchList);
-            toggleModal();
-          }}
-        >
-          {loading && <ActivityIndicator size={36} color={"#fff"} />}
-          {!loading && <Text style={styles.primaryText}>Add Absentees</Text>}
-        </TouchableOpacity>
-      </BottomModal> */}
-      <ContentView
-        style={{
-          flexDirection: "column",
-          justifyContent: "space-between",
-          flex: 1,
-        }}
-      >
+      <AddConcernClosureRemark
+        isVisible={showClosureModal}
+        item={taskInfo}
+        onClose={() => setShowClosureModal(false)}
+        onSubmit={onSubmit}
+      />
+      <ContentView style={styles.container}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1, justifyContent: "space-between" }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.flex}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 120 : 40}
         >
-          <View>
-            <ToolbarBorder>
-              <MenuItem onPress={() => navigation.goBack()}>
-                <Feather
-                  style={{ marginEnd: 16 }}
-                  name="arrow-left"
-                  color={primaryText}
-                  size={24}
-                />
-              </MenuItem>
-              <Title>Parent Concern</Title>
+          <ToolbarBorder>
+            <MenuItem onPress={() => navigation.goBack()}>
+              <Feather name="arrow-left" size={24} color="#000" />
+            </MenuItem>
+            <Title>Concern Report</Title>
+            {taskInfo?.status !== "Closed" && (
               <TouchableOpacity
-                style={{
-                  marginEnd: 16,
-                  alignSelf: "center",
-                  justifyContent: "center",
-                }}
-                onPress={() => {
-                  navigation.navigate("AddMemoriesScreen");
-                }}
+                style={{ alignSelf: "center", marginEnd: 16 }}
+                onPress={() => setShowClosureModal(true)}
               >
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontFamily: "RHD-Bold",
-                    color: primaryColor,
-                  }}
-                >
-                  SAVE
-                </Text>
+                <Text style={styles.markAsSolved}>Mark as Solved</Text>
               </TouchableOpacity>
-            </ToolbarBorder>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginHorizontal: 16,
-                marginVertical: 12,
-              }}
-            >
-              <Image
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  borderColor: borderColor,
-                  borderWidth: borderWidth,
-                }}
-                defaultSource={require("../assets/DefaultImage.jpg")}
-              />
-              <View
-                style={{ flexGrow: 1, flexShrink: 1, marginHorizontal: 16 }}
-              >
-                <Text
-                  style={{
-                    fontFamily: "RHD-Medium",
-                    fontSize: 16,
-                    lineHeight: 24,
-                  }}
-                >
-                  Avanti Rao
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: "RHD-Medium",
-                    fontSize: 14,
-                    lineHeight: 21,
-                    color: secondaryText,
-                  }}
-                >
-                  Parent: Rahul Jain
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={{
-                  alignSelf: "center",
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderWidth: borderWidth,
-                  borderColor: borderColor,
-                  borderRadius: 8,
-                }}
-              >
-                <View style={{flexDirection:'row',alignItems:"center",justifyContent:"center"}}>
-                <Text style={{fontFamily:"RHD-Medium",fontSize:14,lineHeight:21}}>Open</Text>
-                <Feather name="chevron-down" size={16} color={secondaryText} />
-                </View>
-              </TouchableOpacity>
-            </View>
-            <View style={{ marginHorizontal: 16 }}>
+            )}
+          </ToolbarBorder>
+          <View style={styles.flex}>
+            <View style={styles.detailsContainer}>
               {renderComplaintDetails()}
             </View>
-            <View>
-              <View
-                style={{
-                  marginTop: 8,
-                }}
-              >
-                <View style={styles.inputView}>
-                  <Text style={styles.inputText}>Remarks</Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        height: 120,
-                        borderColor: reasonFocused ? primaryColor : borderColor,
-                        borderWidth: reasonFocused ? 1 : borderWidth,
-                      },
-                    ]}
-                    numberOfLines={6}
-                    multiline
-                    autoCapitalize="none"
-                    selectionColor={primaryColor}
-                    placeholder={""}
-                    onChangeText={(text) => setReason(text)}
-                    value={reason}
-                    placeholderTextColor={borderColor ?? underlayColor}
-                    onFocus={() => setReasonFocused(true)}
-                    onBlur={() => setReasonFocused(false)}
-                  ></TextInput>
-                </View>
+            {taskInfo?.status === "Closed" && (
+              <IssueResolvedCard
+                remark={taskInfo?.remarks}
+                closed_by={taskInfo?.closed_by}
+              />
+            )}
+            <IssueCommentList id={taskInfo?.id} status={taskInfo?.status} />
+            {taskInfo?.status !== "Closed" && (
+              <View style={styles.addCommentSection}>
+                <TextInput
+                  style={styles.textarea}
+                  placeholder="Write your comment here..."
+                  multiline
+                  onChangeText={setComment}
+                  value={comment}
+                />
+                <TouchableOpacity
+                  style={
+                    comment.trim() ? styles.submitButton : styles.disabledButton
+                  }
+                  onPress={handleSubmit}
+                  disabled={!comment.trim()}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size={20} color="#fff" />
+                  ) : (
+                    <Text style={styles.submitButtonText}>Submit</Text>
+                  )}
+                </TouchableOpacity>
               </View>
-            </View>
+            )}
           </View>
         </KeyboardAvoidingView>
       </ContentView>
@@ -411,275 +297,61 @@ const UpdateConcernScreen = () => {
   );
 };
 
+const getStatusColor = (status) => {
+  switch (status) {
+    case "New":
+      return "#0000FF";
+    case "Open":
+      return "#008000";
+    case "Closed":
+      return "#800080";
+    default:
+      return "#808080";
+  }
+};
+
 const styles = StyleSheet.create({
-  label: {
-    fontSize: 16,
-    color: "#333",
-    marginTop: 10,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 10,
-    fontSize: 16,
-    borderRadius: 5,
-    marginTop: 5,
-  },
-  picker: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 10,
-    fontSize: 16,
-    borderRadius: 5,
-    marginTop: 5,
-  },
-  datePicker: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 10,
-    fontSize: 16,
-    borderRadius: 5,
-  },
-  recentView: {
+  container: { flex: 1 },
+  flex: { flex: 1, justifyContent: "space-between" },
+  header: { flexDirection: "row", marginVertical: 12, alignItems: "center" },
+  studentInfo: { flex: 1, marginHorizontal: 16 },
+  studentName: { fontSize: 16, fontWeight: "500" },
+  studentClass: { fontSize: 14, color: "#666" },
+  status: { padding: 4, borderRadius: 4, color: "#fff", fontWeight: "600" },
+  infoContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    flexWrap: "wrap",
+    marginVertical: 12,
+    columnGap: 16,
   },
-  item: {
-    flexDirection: "row",
-    alignItems: "center",
-    // backgroundColor: primaryColor_10, //c7c7c7
-    borderBottomColor: primaryColor_300,
-    borderBottomWidth: borderWidth,
-  },
-  label: {
-    paddingVertical: 12,
-    marginHorizontal: 16,
-    fontFamily: "RHD-Medium",
-    fontSize: 16,
-    color: primaryColor, //979797
-    fontWeight: "500",
-  },
-  textInput: {
-    fontSize: 16,
-    marginVertical: 8,
-    color: primaryText,
-    paddingVertical: 8,
-    borderWidth: itemBorder,
-    backgroundColor: itemColor,
-    borderColor: borderColor,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    textAlignVertical: "top",
-    minHeight: 84,
-    fontFamily: "RHD-Medium",
-  },
-  button: {
-    margin: 16,
-    backgroundColor: primaryColor,
-    borderRadius: 8,
-    height: 52,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  defaultItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderColor: borderColor,
-    borderRadius: 12,
-    borderWidth: borderWidth,
-    marginEnd: 12,
-    fontFamily: "RHD-Regular",
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  headerView: {
-    flexDirection: "row",
-    alignItems: "center",
-    // justifyContent: "space-between",
-    paddingVertical: 8,
-  },
-  headerText: {
-    fontFamily: "RHD-Medium",
-    fontSize: 20,
-    lineHeight: 30,
-  },
-  subText: {
-    fontFamily: "RHD-Regular",
-    fontSize: 14,
-    lineHeight: 21,
-    color: primaryText,
-  },
-  toolbarView: {
-    marginHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: borderWidth,
-    borderColor: borderColor,
-  },
-  basicHeaderText: {
-    fontFamily: "RHD-Medium",
-    fontSize: 18,
-    lineHeight: 27,
-    marginHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 120,
-    borderColor: borderColor,
-    borderWidth: borderWidth,
-  },
-  inputText: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: "RHD-Medium",
-    color: primaryText,
-  },
-  secondaryText: {
-    fontSize: 14,
-    lineHeight: 24,
-    fontFamily: "RHD-Regular",
-    color: primaryText,
-  },
-  secondaryButton: {
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderWidth: borderWidth,
-    borderColor: borderColor,
-    marginEnd: 12,
-    fontFamily: "RHD-Medium",
-    height: 40,
-    textAlignVertical: "center",
-    fontSize: 16,
-    alignContent: "center",
-    justifyContent: "center",
-    marginTop: 4,
-  },
-  inputView: {
-    marginTop: 16,
-    marginHorizontal: 16,
-  },
-  input: {
-    height: 40,
-    fontSize: 16,
-    color: primaryText,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    fontFamily: "RHD-Medium",
-    backgroundColor: itemColor,
-    borderColor: borderColor,
-    borderWidth: borderWidth,
-    marginTop: 4,
-    textAlignVertical: "top",
-  },
-  primaryButton: {
-    width: width - 32,
-    backgroundColor: primaryColor,
+  detailsContainer: { marginHorizontal: 16 },
+  addCommentSection: { marginVertical: 16, paddingHorizontal: 16 },
+  textarea: {
+    minHeight: 120,
+    borderColor: "#e0e0e0",
+    borderWidth: 1,
+    borderRadius: 4,
+    padding: 8,
     marginBottom: 16,
-    marginHorizontal: 16,
-    borderRadius: 8,
-    height: 48,
+  },
+  submitButton: {
+    backgroundColor: primaryColor,
+    padding: 12,
+    borderRadius: 4,
     alignItems: "center",
     justifyContent: "center",
   },
-  primaryText: {
-    color: "#fff",
-    textAlignVertical: "center",
-    fontFamily: "RHD-Medium",
-    fontSize: 16,
-    alignSelf: "center",
-  },
-  dateText: {
-    fontFamily: "RHD-Medium",
-    fontSize: 16,
-    marginEnd: 8,
-    // textAlignVertical:"center"
-  },
-  tagText: {
-    fontSize: 14,
-    lineHeight: 21,
-    paddingHorizontal: 8,
-    textAlignVertical: "center",
-  },
-  feedItem: {
-    marginEnd: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: borderWidth,
-    borderColor: borderColor,
-    // backgroundColor: itemColor,
-  },
-  dateView: {
-    flexDirection: "row",
-    justifyContent: "center",
-    // borderColor: borderColor,
-    // borderWidth: borderWidth,
-    // paddingHorizontal: 12,
-    // paddingVertical: 12,
-    // borderRadius: 8,
-    marginTop: 8,
-    // marginEnd: 16,
-    alignSelf: "flex-start",
-    alignItems: "flex-start",
-    backgroundColor: primaryColor_50,
-    marginStart: -16, //todo check for alternatives
-  },
-  androidDateView: {
-    flexDirection: "row",
-    justifyContent: "center",
-    borderColor: borderColor,
-    borderWidth: borderWidth,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 8,
-    marginEnd: 16,
-    alignSelf: "flex-start",
-    alignItems: "flex-start",
-    backgroundColor: "#fff",
-  },
-  leaveInfoText: {
-    fontFamily: "RHD-Medium",
-    paddingHorizontal: 16,
-    marginHorizontal: 16,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingVertical: 8,
-    color: primaryColor_800,
-    backgroundColor: primaryColor_50,
-  },
-  overlay: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 16,
-    backgroundColor: "#000000BC",
-  },
-  searchView: {
-    flex: 1,
-    flexGrow: 1,
-    flexDirection: "row",
+  submitButtonText: { color: "#fff", fontWeight: "600" },
+  disabledButton: {
+    backgroundColor: "#ccc",
+    padding: 12,
+    borderRadius: 4,
+
     alignItems: "center",
-    marginTop: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderColor: borderColor,
-    borderWidth: borderWidth,
-    borderRadius: 12,
-    marginBottom: 12,
-    height: 52,
+    justifyContent: "center",
   },
-  searchInput: {
-    flex: 1,
-    fontFamily: "RHD-Medium",
-    marginHorizontal: 16,
-  },
+  markAsSolved: { color: primaryColor, fontSize: 16, fontWeight: "700" },
+  errorText: { color: "red", textAlign: "center" },
 });
 
 export default React.memo(UpdateConcernScreen);

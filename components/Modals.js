@@ -24,8 +24,14 @@ const { width, height } = new Dimensions.get("screen");
 import { Feather } from "@expo/vector-icons";
 import { useRef, useEffect, useState } from "react";
 import supabase_api from "../backend/supabase_api";
-import { formatDate } from "../utils/DateUtils";
-import { ApprovedLabel, PendingLabel } from "./Label";
+import { formatDate, isDateGreaterThanToday } from "../utils/DateUtils";
+import {
+  ApprovedLabel,
+  DeclinedLabel,
+  InformedLabel,
+  PendingLabel,
+} from "./Label";
+import { UserInformation } from "./InformationView";
 
 const modalOptions = Platform.select({
   android: {
@@ -49,25 +55,64 @@ export const InformationView = ({ label, value }) => {
   );
 };
 
+const isLeaveOverDue = (approved, type, start_date) => {
+  let autoApproved = false;
+  let today = new Date();
+  if (approved === null && type === "General" && new Date(start_date) < today) {
+    autoApproved = true;
+  }
+  return autoApproved;
+};
+
+const renderLabel = (status) => {
+  // if (autoApproved) return <ApprovedLabel label={"Approved"} />;
+  // if (approved === null)
+  //   if (type === "Sick Leave") return <InformedLabel label={"Informed"} />;
+  //   else return <PendingLabel label={"Pending"} />;
+  if (status === "Approved") {
+    return <ApprovedLabel label={status} />;
+  } else if (status === "Rejected") {
+    return <DeclinedLabel label={status} />;
+  } else if (status === "Pending") {
+    return <PendingLabel label={status} />;
+  }
+};
+
+const getDate = (start_date, end_date) =>
+  start_date === end_date
+    ? formatDate(start_date)
+    : `${formatDate(start_date)} - ${formatDate(end_date)}`;
+
 export const LeaveInformationModal = ({
   isVisible,
   onClose,
   onConfirm,
   leaveItem,
+  onApprove = null,
+  onDecline = null,
 }) => {
   if (leaveItem == null) return;
   const {
     approved,
+    status,
     end_date: endDate,
     created_at: createdAt,
     parent_id: parentId,
-    parent_info: { name: parentName },
-    reason,
+    parent_info: { name: parentName, avatar: parentAvatar },
+    reason = "",
+    remark,
     start_date: startDate,
     approved_on: approvedOn,
-    teacher_info: { id: teacherId, name: teacherName },
+    team_info: { id: teacherId, name: teacherName, avatar: teacherAvatar },
     type,
+    student_info: {
+      avatar,
+      class_info: { section, standard },
+      name: student_name,
+    },
   } = leaveItem;
+  const isAutoApproved = isLeaveOverDue(approved, type, startDate);
+  const [loading, setLoading] = useState(false);
   return (
     <Modal
       visible={isVisible}
@@ -91,43 +136,278 @@ export const LeaveInformationModal = ({
             }}
           >
             <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
             >
-              <InformationView label={"Type"} value={type} />
-              {approved ? (
-                <ApprovedLabel />
-              ) : (
-                <PendingLabel
-                  label={type == "Sick Leave" ? "Informed" : "Pending"}
+              <UserInformation
+                avatar={leaveItem?.student_info?.avatar}
+                name={leaveItem?.student_info?.name}
+                title="Student"
+              />
+              <InformationView label={"Class"} value={standard + section} />
+              {renderLabel(status)}
+            </View>
+            <View style={{ flexDirection: "row", gap: 36 }}>
+              <InformationView
+                label={"Leave Duration"}
+                value={getDate(startDate, endDate)}
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                gap: 16,
+              }}
+            >
+              {
+                <InformationView
+                  label={"Reason"}
+                  value={reason == "" ? "No Reason" : reason}
                 />
-              )}
+              }
             </View>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <InformationView label={"From"} value={formatDate(startDate)} />
-              <InformationView label={"To"} value={formatDate(endDate)} />
-            </View>
-            <InformationView label={"Reason"} value={reason} />
 
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <InformationView label={"Approver"} value={teacherName} />
+            <View style={{ flexDirection: "row", gap: 36 }}>
+              <UserInformation
+                avatar={parentAvatar}
+                name={parentName}
+                title="Parent"
+              />
               <InformationView
                 label={"Submitted on"}
                 value={formatDate(createdAt)}
               />
             </View>
+
+            {status !== "Pending" && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  columnGap: 36,
+                  flexWrap: "wrap",
+                }}
+              >
+                {remark && <InformationView label={"Remark"} value={remark} />}
+
+                <UserInformation
+                  title={status + " by"}
+                  name={isAutoApproved ? "Auto Approved" : teacherName}
+                  avatar={isAutoApproved ? "" : teacherAvatar}
+                />
+                <InformationView
+                  label={status + " on"}
+                  value={formatDate(approvedOn)}
+                />
+              </View>
+            )}
+          </View>
+          {status === "Pending" && (
+            <View style={styles.buttonView}>
+              <TouchableOpacity
+                onPress={onApprove}
+                style={styles.primaryButton}
+              >
+                {loading ? (
+                  <ActivityIndicator color={primaryColor_50} size={20} />
+                ) : (
+                  <Text
+                    style={{ fontFamily: "RHD-Bold", color: primaryColor_50 }}
+                  >
+                    Approve
+                  </Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={onDecline}
+                style={styles.secondaryButton}
+              >
+                <Text style={{ fontFamily: "RHD-Medium" }}>Decline</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+export const AddLeaveRejectionRemark = ({
+  isVisible,
+  onClose,
+  onConfirm,
+  item,
+  onDecline,
+}) => {
+  const [loading, setLoading] = useState(false);
+  const [reminder, setReminder] = useState("");
+
+  if (item === null) return;
+  return (
+    <Modal
+      visible={isVisible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+      {...modalOptions}
+      style={{ zIndex: 1000 }}
+    >
+      <View style={styles.modalView}>
+        <View style={styles.modalBackgroundView}>
+          <View style={[styles.modalHeaderView]}>
+            <Text style={styles.modalHeaderText}>Leave Remark</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Feather name="x" size={24} color={primaryText} />
+            </TouchableOpacity>
+          </View>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 16,
+            }}
+          >
+            <UserInformation
+              avatar={item?.student_info?.avatar}
+              name={item?.student_info?.name}
+              title="Student"
+            />
+            <InformationView
+              label={"Duration"}
+              value={getDate(item?.start_date, item?.end_date)}
+            />
+          </View>
+          <View
+            style={{
+              margin: 16,
+              borderWidth: borderWidth,
+              borderColor: borderColor,
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              alignItems: "flex-start",
+              borderRadius: 4,
+            }}
+          >
+            <TextInput
+              style={{
+                minHeight: 120,
+                textAlignVertical: "top",
+                fontFamily: "RHD-Medium",
+              }}
+              multiline
+              autoFocus
+              placeholder="Enter Remark "
+              placeholderTextColor={borderColor ?? underlayColor}
+              value={reminder}
+              onChangeText={(text) => setReminder(text)}
+              onSubmitEditing={() => onConfirm(reminder)}
+            />
           </View>
           <View style={styles.buttonView}>
             <TouchableOpacity onPress={onClose} style={styles.secondaryButton}>
               <Text style={{ fontFamily: "RHD-Medium" }}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={onConfirm} style={styles.primaryButton}>
-              <Text style={{ fontFamily: "RHD-Bold", color: primaryColor_50 }}>
-                Remove
-              </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setLoading(true);
+                onDecline(reminder);
+              }}
+              style={styles.primaryButton}
+            >
+              {loading ? (
+                <ActivityIndicator size={20} color={"#fff"} />
+              ) : (
+                <Text
+                  style={{ fontFamily: "RHD-Bold", color: primaryColor_50 }}
+                >
+                  Decline Request
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+export const AddConcernClosureRemark = ({
+  isVisible,
+  onClose,
+  item,
+  onSubmit,
+}) => {
+  const [loading, setLoading] = useState(false);
+  const [reminder, setReminder] = useState("");
+
+  if (item === null) return;
+  return (
+    <Modal
+      visible={isVisible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+      {...modalOptions}
+      style={{ zIndex: 1000 }}
+    >
+      <View style={styles.modalView}>
+        <View style={styles.modalBackgroundView}>
+          <View style={[styles.modalHeaderView]}>
+            <Text style={styles.modalHeaderText}>Concern Remark</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Feather name="x" size={24} color={primaryText} />
+            </TouchableOpacity>
+          </View>
+          <View
+            style={{
+              margin: 16,
+              borderWidth: borderWidth,
+              borderColor: borderColor,
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              alignItems: "flex-start",
+              borderRadius: 4,
+            }}
+          >
+            <TextInput
+              style={{
+                minHeight: 120,
+                textAlignVertical: "top",
+                fontFamily: "RHD-Medium",
+                fontSize:16
+              }}
+              multiline
+              autoFocus
+              placeholder="Enter Remark for Closure"
+              placeholderTextColor={borderColor ?? underlayColor}
+              value={reminder}
+              onChangeText={(text) => setReminder(text)}
+              onSubmitEditing={() => onSubmit(reminder)}
+            />
+          </View>
+          <View style={styles.buttonView}>
+            <TouchableOpacity onPress={onClose} style={styles.secondaryButton}>
+              <Text style={{ fontFamily: "RHD-Medium" }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setLoading(true);
+                onSubmit(reminder);
+              }}
+              style={styles.primaryButton}
+            >
+              {loading ? (
+                <ActivityIndicator size={20} color={"#fff"} />
+              ) : (
+                <Text
+                  style={{ fontFamily: "RHD-Bold", color: primaryColor_50 }}
+                >
+                  Submit
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -150,7 +430,7 @@ export const AddNotificationModal = ({
     setReminder(reminderValue);
     return () => {};
   }, [isVisible]);
-  if(item===null) return;
+  if (item === null) return;
   const {
     class_id,
     day,
@@ -164,7 +444,7 @@ export const AddNotificationModal = ({
     subject_info: {
       subject,
       teacher_id,
-      teacher_info: { avatar, name },
+      team_info: { avatar, name },
     },
     class_info: { section, standard },
     title,
@@ -415,7 +695,12 @@ export const ConfirmSignOutDialog = ({ isVisible, onClose, onConfirm }) => {
   );
 };
 
-export const ConfirmDeleteDialog = ({ isVisible, onClose, onConfirm,type }) => {
+export const ConfirmDeleteDialog = ({
+  isVisible,
+  onClose,
+  onConfirm,
+  type,
+}) => {
   const [loading, setLoading] = useState(false);
   return (
     <Modal
@@ -433,7 +718,9 @@ export const ConfirmDeleteDialog = ({ isVisible, onClose, onConfirm,type }) => {
             </TouchableOpacity>
           </View>
           <Text style={styles.modalContentText}>
-            {"Are you sure you want to delete this " + type + "?\nThis action cannot be undone."}
+            {"Are you sure you want to delete this " +
+              type +
+              "?\nThis action cannot be undone."}
           </Text>
           <View style={styles.buttonView}>
             <TouchableOpacity onPress={onClose} style={styles.secondaryButton}>
@@ -444,7 +731,7 @@ export const ConfirmDeleteDialog = ({ isVisible, onClose, onConfirm,type }) => {
                 setLoading(true);
                 onConfirm();
               }}
-              style={[styles.primaryButton,{backgroundColor:"#e03737"}]}
+              style={[styles.primaryButton, { backgroundColor: "#e03737" }]}
             >
               {loading ? (
                 <ActivityIndicator size={24} color={primaryColor_50} />
@@ -567,7 +854,7 @@ const styles = StyleSheet.create({
   informationView: {
     justifyContent: "space-between",
     paddingVertical: 8,
-    marginHorizontal: 8,
+    flexShrink: 1,
   },
   informationLabel: {
     fontFamily: "RHD-Medium",
@@ -582,6 +869,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     textAlign: "left",
+    flexShrink: 1,
   },
   modalView: {
     flex: 1,
@@ -643,8 +931,8 @@ const styles = StyleSheet.create({
   buttonView: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginBottom: 16,
+    paddingHorizontal: 8,
   },
 });
 

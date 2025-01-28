@@ -1,28 +1,39 @@
+import React, { useState } from "react";
 import {
   StyleSheet,
   View,
   Text,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
+  TouchableWithoutFeedback,
 } from "react-native";
+import Avatar from "./Avatar";
+import { InformationView } from "./Modals";
+import { UserInformation } from "./InformationView";
+import supabase_api from "../backend/supabase_api";
+import InAppNotification from "../utils/InAppNotification";
+import ErrorLogger from "../utils/ErrorLogger";
+import { convertDate, formatDate } from "../utils/DateUtils";
 import {
   borderColor,
   borderWidth,
   primaryColor,
   primaryColor_50,
-  primaryColor_800,
   secondaryText,
 } from "../utils/Color";
-import { Months } from "../utils/Months";
-import { formatDate } from "../utils/DateUtils";
-import { InformationView } from "./Modals";
-import supabase_api from "../backend/supabase_api";
-import InAppNotification from "../utils/InAppNotification";
-import ErrorLogger from "../utils/ErrorLogger";
-import { useState } from "react";
 
-export default function AttendanceItem({ item }) {
+const statusColors = {
+  Rejected: "#FF6347", // Tomato Red
+  Approved: "#00b104", // Lime Green
+  Pending: "#FFAC00", // Amber
+};
+
+export default function AttendanceItem({
+  item,
+  tag,
+  onLeaveClicked,
+  onDecline = null,
+}) {
   const [loading, setLoading] = useState(false);
 
   const onApprove = () => {
@@ -30,150 +41,203 @@ export default function AttendanceItem({ item }) {
     supabase_api.shared
       .updateLeaveRequest(item?.id, "", true)
       .then(() => {
+        supabase_api.shared.addPushNotifications({
+          title: "Leave Request Update",
+          description: "Leave Request Approved",
+          user_id: item?.parent_id,
+        });
         InAppNotification.shared.showSuccessNotification({
           title: "Leave Application Approved!",
-          description: "",
         });
       })
       .catch((error) => {
-        ErrorLogger.shared.ShowError("ApplyLeaveScreen: handleSubmit: ", error);
+        ErrorLogger.shared.ShowError("AttendanceItem: onApprove", error);
       })
       .finally(() => setLoading(false));
   };
 
   const {
+    start_date,
     end_date,
     reason,
-    start_date,
+    status,
     student_info: {
       avatar,
       class_info: { section, standard },
       name: student_name,
     },
-    type,
+    parent_info: { name: parent_name },
   } = item;
 
-  const getDate = () => {
-    if (start_date === end_date) {
-      return formatDate(start_date);
-    }
-    return formatDate(start_date) + " - " + formatDate(end_date);
+  const getDate = () =>
+    start_date === end_date
+      ? formatDate(start_date)
+      : `${formatDate(start_date)} - ${formatDate(end_date)}`;
+
+  const renderStatusTag = () => (
+    <View
+      style={[
+        styles.statusTag,
+        {
+          backgroundColor:
+            tag !== "All" ? primaryColor_50 : `${statusColors[status]}2a`,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.statusText,
+          { color: tag !== "All" ? primaryColor : statusColors[status] },
+        ]}
+      >
+        {tag === "All" ? status : `${standard} ${section} section`}
+      </Text>
+    </View>
+  );
+
+  const renderButtons = () => {
+    if (tag === "Pending")
+      return (
+        <View style={styles.buttonView}>
+          <TouchableOpacity onPress={onApprove} style={styles.primaryButton}>
+            {loading ? (
+              <ActivityIndicator size={16} color="#fff" />
+            ) : (
+              <Text style={styles.primaryButtonText}>Approve</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              onDecline(item);
+            }}
+            style={styles.secondaryButton}
+          >
+            <Text style={styles.secondaryButtonText}>Reject</Text>
+          </TouchableOpacity>
+        </View>
+      );
   };
 
-  return (
-    <View
-      style={{ paddingHorizontal: 16, marginVertical: 12, paddingVertical: 4 }}
-    >
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Image
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-            borderWidth: borderWidth,
-            borderColor: borderColor,
-          }}
-          source={{ uri: avatar }}
-        />
-        <View style={{ flex: 1, marginHorizontal: 16 }}>
-          <Text
-            style={{
-              fontFamily: "RHD-Medium",
-              fontSize: 16,
-              lineHeight: 24,
-            }}
-          >
-            {student_name}
-          </Text>
-          <Text
-            style={{
-              fontFamily: "RHD-Medium",
-              fontSize: 14,
-              lineHeight: 21,
-              color: secondaryText,
-            }}
-          >
-            {getDate()}
-          </Text>
+  const renderApprovalDetails = () => {
+    if (tag === "Approved") {
+      return (
+        <View style={styles.detailsRow}>
+          <UserInformation
+            avatar={item?.team_info?.avatar}
+            name={item?.team_info?.name}
+            title="Approved By"
+          />
+          <InformationView
+            label="Approved on"
+            value={convertDate(item?.approved_on)}
+          />
         </View>
-        <View
-          style={{
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            backgroundColor: primaryColor_50,
-            borderRadius: 8,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 14,
-              lineHeight: 21,
-              fontFamily: "RHD-Medium",
-              color: primaryColor,
-            }}
-          >
-            {standard + section + " section"}
-          </Text>
-        </View>
-      </View>
-      {reason !== null && (
-        <Text
-          style={{
-            marginTop: 8,
-            marginBottom: 16,
-            fontFamily: "RHD-Medium",
-            fontSize: 14,
-            lineHeight: 21,
-          }}
-        >
-          {type} leave:{" "}
-          <Text>Please approve my daughter leave for the summer break</Text>
-        </Text>
-      )}
-      <View style={styles.buttonView}>
-        <TouchableOpacity
-          onPress={() => {
-            onApprove();
-          }}
-          style={styles.primaryButton}
-        >
-          {loading ? (
-            <ActivityIndicator size={16} color={"#fff"} />
-          ) : (
-            <Text style={{ fontFamily: "RHD-Bold", color: primaryColor_50 }}>
-              Approve
-            </Text>
+      );
+    }
+    if (tag === "Rejected") {
+      return (
+        <View style={[styles.detailsRow, styles.wrapContent]}>
+          {item?.remark && (
+            <InformationView label="Remark" value={item?.remark} />
           )}
-        </TouchableOpacity>
-        <TouchableOpacity onPress={{}} style={styles.secondaryButton}>
-          <Text style={{ fontFamily: "RHD-Medium" }}>Reject</Text>
-        </TouchableOpacity>
+          <UserInformation
+            avatar={item?.team_info?.avatar}
+            name={item?.team_info?.name}
+            title="Rejected By"
+          />
+          <InformationView
+            label="Rejected on"
+            value={convertDate(item?.approved_on)}
+          />
+        </View>
+      );
+    }
+    return null;
+  };
+
+  if(tag !== 'All' && status !== tag) return null;
+
+  return (
+    <TouchableWithoutFeedback
+      onPress={() => {
+        onLeaveClicked(item);
+      }}
+    >
+      <View style={styles.container}>
+        {/* Header Section */}
+        <View style={styles.header}>
+          <Avatar height={48} width={48} user={item?.student_info} />
+          <View style={styles.headerInfo}>
+            <Text style={styles.studentName}>
+              {student_name}{" "}
+              {tag === "All" && (
+                <Text style={styles.classInfo}>
+                  ({standard}
+                  {section})
+                </Text>
+              )}
+            </Text>
+            <Text style={styles.parentName}>{parent_name}</Text>
+          </View>
+          {renderStatusTag()}
+        </View>
+
+        {/* Body Section */}
+        <InformationView label="Leave Duration" value={getDate()} />
+        {reason && <InformationView label="Reason" value={reason} />}
+        {renderButtons()}
+        {renderApprovalDetails()}
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 16,
+    marginVertical: 12,
+    paddingVertical: 8,
+    borderBottomWidth: borderWidth,
+    borderColor: borderColor,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  headerInfo: {
+    flex: 1,
+    marginHorizontal: 16,
+  },
+  studentName: {
+    fontFamily: "RHD-Medium",
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  classInfo: {
+    color: secondaryText,
+  },
+  parentName: {
+    fontFamily: "RHD-Medium",
+    fontSize: 14,
+    lineHeight: 21,
+    color: secondaryText,
+  },
+  statusTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  statusText: {
+    fontSize: 14,
+    lineHeight: 21,
+    fontFamily: "RHD-Medium",
+  },
   buttonView: {
     flexDirection: "row",
     justifyContent: "flex-end",
-  },
-  secondaryButton: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: borderWidth,
-    borderColor: borderColor,
-    borderRadius: 8,
-    marginStart: 8,
+    marginTop: 12,
   },
   primaryButton: {
     flex: 1,
@@ -184,5 +248,30 @@ const styles = StyleSheet.create({
     backgroundColor: primaryColor,
     borderRadius: 8,
     marginEnd: 8,
+  },
+  primaryButtonText: {
+    fontFamily: "RHD-Bold",
+    color: primaryColor_50,
+  },
+  secondaryButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: borderWidth,
+    borderColor: borderColor,
+    borderRadius: 8,
+  },
+  secondaryButtonText: {
+    fontFamily: "RHD-Medium",
+  },
+  detailsRow: {
+    flexDirection: "row",
+    marginTop: 8,
+  },
+  wrapContent: {
+    flexWrap: "wrap",
+    gap: 8,
   },
 });

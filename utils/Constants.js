@@ -24,4 +24,6 @@ export const daily_task_info_db = "daily_task_info";
 export const subject_notification_db = "subject_notification";
 export const parent_notification_db = "parent_notification";
 export const class_info_db = "class_info";
-
+export const community_message_info_db = "community_message_info";
+export const push_notification_db = "push_notifications_queue";
+export const issue_comment_db = "issue_comment";

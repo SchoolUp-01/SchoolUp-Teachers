@@ -149,7 +149,32 @@ export const ButtonLabel = styled.Text`
 export const ScreenHint = styled.Text`
   padding-horizontal: 8px;
   margin-bottom: 8px;
-  font-size: 12px;
+  font-size: 16px;
   color: ${secondaryText};
   font-family: "RHD-Regular";
+`;
+
+
+//Information View
+export const InformationContainer = styled.View`
+    justify-content: space-between;
+    padding-horizontal: 16px;
+    padding-vertical: 8px;
+    margin-end: 28px;
+`;
+
+export const InformationTitle = styled.Text`
+  font-family: Inter-Regular;
+  font-size: 12px;
+  line-height: 16px;
+  color: #646464;
+  text-align: left;
+`;
+
+export const InformationValueText = styled.Text`
+  flex: 1;
+  text-align: left;
+  font-family: Inter-Medium;
+  font-size: 16px;
+  margin-top: 4px;
 `;

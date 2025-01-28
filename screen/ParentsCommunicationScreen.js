@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   VirtualizedList,
-  TouchableHighlight,
-  Image,
   LayoutAnimation,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -31,13 +29,10 @@ import {
   borderWidth,
   primaryColor,
   primaryColor_50,
-  primaryColor_800,
   primaryText,
   secondaryText,
-  underlayColor,
 } from "../utils/Color";
 import { Feather } from "@expo/vector-icons";
-import StudentDetailsTab from "../components/TeachersDetailsTab";
 import supabase_api from "../backend/supabase_api";
 import ErrorLogger from "../utils/ErrorLogger";
 import InAppNotification from "../utils/InAppNotification";
@@ -48,17 +43,15 @@ function ParentsCommunicationScreen(props) {
   let messageSubscription = null;
   const navigation = useNavigation();
   const route = useRoute();
-  const [teachersInfo, setTeachersInfo] = useState(
-    route?.params?.teacherInfo ?? null
-  );
-  const [parentInfo, setParentInfo] = useState(
+
+  const [parentsInfo, setParentsInfo] = useState(
     route?.params?.parentInfo ?? null
-  );
-  const [studentInfo, setStudentInfo] = useState(
-    route?.params?.studentInfo ?? null
   );
   const [conversationID, setConversationID] = useState(
     route?.params?.conversationID ?? null
+  );
+  const [conversation, setConversation] = useState(
+    route?.params?.conversation ?? null
   );
   const [message, setMessage] = useState("");
   const [messageList, setMessageList] = useState([]);
@@ -67,7 +60,7 @@ function ParentsCommunicationScreen(props) {
   useEffect(() => {
     LayoutAnimation.easeInEaseOut();
     supabase_api.shared
-      .getConversationID(parentInfo?.id)
+      .getConversationID(parentsInfo?.id)
       .then((res) => {
         setConversationID(res);
       })
@@ -81,6 +74,7 @@ function ParentsCommunicationScreen(props) {
   }, []);
 
   useEffect(() => {
+    resetSeenCount()
     if (conversationID !== null) {
       getMessagesFromSupabase();
       startMessageSubscription();
@@ -90,6 +84,14 @@ function ParentsCommunicationScreen(props) {
         supabase.realtime.channel("message-channel").unsubscribe();
     };
   }, [conversationID]);
+
+  const resetSeenCount = async() =>{
+    const unseen = conversation?.message_info?.parent_id === null;
+    if(unseen && conversation?.unseen_count !== 0){
+      await supabase_api.shared.updateConversationSeenCount(conversationID)
+      }
+
+  }
 
   const getMessagesFromSupabase = async () => {
     supabase_api.shared
@@ -153,7 +155,7 @@ function ParentsCommunicationScreen(props) {
     if (sendMessage !== "") {
       setSending(true);
       supabase_api.shared
-        .addTeacherMessage(conversationID, parentInfo?.id, sendMessage)
+        .addTeacherMessage(conversationID, parentsInfo?.id, sendMessage)
         .then((res) => {
           setConversationID(res);
           setMessage("");
@@ -173,7 +175,6 @@ function ParentsCommunicationScreen(props) {
   };
 
   const renderToolBar = () => {
-    console.log("Student Info: ",studentInfo)
     return (
       <ToolbarBorder>
         <MenuItem
@@ -185,7 +186,7 @@ function ParentsCommunicationScreen(props) {
         </MenuItem>
         <TitleView>
           <TitleSubHeader>Conversation</TitleSubHeader>
-          <TitleHeader numberOfLines={1}>{studentInfo?.name}{" ("+parentInfo?.name+") " }</TitleHeader>
+          <TitleHeader numberOfLines={1}>{parentsInfo?.name}</TitleHeader>
         </TitleView>
         <MenuItem
           onPress={() => {
@@ -232,129 +233,181 @@ function ParentsCommunicationScreen(props) {
     );
   };
 
-  const renderBubble = (item, index) => {
-    var sameUserInPrevMessage = false;
-    var sameUserInNextMessage = false;
-    var attachToPreviousItem = false;
-    var attachToNextItem = false;
-    var newMessage = false;
-    var previousMessage = messageList[index + 1];
-    var nextMessage = messageList[index - 1];
-    var currentMessage = item;
+  // const renderBubble = (item, index) => {
+  //   var sameUserInPrevMessage = false;
+  //   var sameUserInNextMessage = false;
+  //   var attachToPreviousItem = false;
+  //   var attachToNextItem = false;
+  //   var newMessage = false;
+  //   var previousMessage = messageList[index + 1];
+  //   var nextMessage = messageList[index - 1];
+  //   var currentMessage = item;
 
-    if (previousMessage?.sid !== undefined && previousMessage?.sid) {
-      previousMessage?.sid === currentMessage?.sid
-        ? (sameUserInPrevMessage = true)
-        : (sameUserInPrevMessage = false);
-    }
+  //   if (previousMessage?.sid !== undefined && previousMessage?.sid) {
+  //     previousMessage?.sid === currentMessage?.sid
+  //       ? (sameUserInPrevMessage = true)
+  //       : (sameUserInPrevMessage = false);
+  //   }
 
-    if (nextMessage?.sid !== undefined && nextMessage?.sid) {
-      nextMessage?.sid === currentMessage?.sid
-        ? (sameUserInNextMessage = true)
-        : (sameUserInNextMessage = false);
-    } else {
-      sameUserInNextMessage = true;
-    }
+  //   if (nextMessage?.sid !== undefined && nextMessage?.sid) {
+  //     nextMessage?.sid === currentMessage?.sid
+  //       ? (sameUserInNextMessage = true)
+  //       : (sameUserInNextMessage = false);
+  //   } else {
+  //     sameUserInNextMessage = true;
+  //   }
 
-    if (
-      previousMessage?.created_at !== undefined &&
-      previousMessage?.created_at
-    ) {
-      var currentMessageDay = moment(currentMessage?.created_at)
-        .toDate()
-        .setHours(0, 0, 0, 0);
-      var previousMessageDay = moment(previousMessage?.created_at)
-        .toDate()
-        .setHours(0, 0, 0, 0);
-      currentMessageDay === previousMessageDay
-        ? (attachToPreviousItem = true)
-        : (attachToPreviousItem = false);
-    } else {
-      attachToPreviousItem = false;
-    }
-    var diff = 0;
-    if (nextMessage?.created_at !== undefined && nextMessage?.created_at) {
-      var currentMessageDay = moment(currentMessage?.created_at)
-        .toDate()
-        .setSeconds(0, 0);
-      var nextMessageDay = moment(nextMessage?.created_at)
-        .toDate()
-        .setSeconds(0, 0);
-      diff = currentMessageDay - nextMessageDay;
-      diff === 0 ? (attachToNextItem = true) : (attachToNextItem = false);
-    } else {
-      attachToNextItem = false;
-    }
+  //   if (
+  //     previousMessage?.created_at !== undefined &&
+  //     previousMessage?.created_at
+  //   ) {
+  //     var currentMessageDay = moment(currentMessage?.created_at)
+  //       .toDate()
+  //       .setHours(0, 0, 0, 0);
+  //     var previousMessageDay = moment(previousMessage?.created_at)
+  //       .toDate()
+  //       .setHours(0, 0, 0, 0);
+  //     currentMessageDay === previousMessageDay
+  //       ? (attachToPreviousItem = true)
+  //       : (attachToPreviousItem = false);
+  //   } else {
+  //     attachToPreviousItem = false;
+  //   }
+  //   var diff = 0;
+  //   if (nextMessage?.created_at !== undefined && nextMessage?.created_at) {
+  //     var currentMessageDay = moment(currentMessage?.created_at)
+  //       .toDate()
+  //       .setSeconds(0, 0);
+  //     var nextMessageDay = moment(nextMessage?.created_at)
+  //       .toDate()
+  //       .setSeconds(0, 0);
+  //     diff = currentMessageDay - nextMessageDay;
+  //     diff === 0 ? (attachToNextItem = true) : (attachToNextItem = false);
+  //   } else {
+  //     attachToNextItem = false;
+  //   }
 
-    var messageBelongsToCurrentUser =
-      supabase_api.shared.uid === currentMessage?.from;
+  //   var messageBelongsToCurrentUser =
+  //     supabase_api.shared.uid === currentMessage?.from;
 
+  //   return (
+  //     <View>
+  //       {!attachToPreviousItem && (
+  //         <View style={styles.dateView}>
+  //           <Text style={styles.dateText}>
+  //             {new Date().setHours(0, 0, 0, 0) -
+  //               new Date(currentMessage.created_at).setHours(0, 0, 0, 0) ==
+  //             0
+  //               ? "Today"
+  //               : "Yesterday"} 
+  //               {/* //moment(currentMessage.created_at).format("ll") */}
+  //           </Text>
+  //         </View>
+  //       )}
+  //       <TouchableHighlight activeOpacity={0.95} underlayColor={underlayColor}>
+  //         <View>
+  //           <View
+  //             style={[
+  //               messageBelongsToCurrentUser
+  //                 ? styles.messageTimeAndNameContainerRight
+  //                 : styles.messageTimeAndNameContainerLeft,
+  //             ]}
+  //           >
+  //             <Text
+  //               style={
+  //                 messageBelongsToCurrentUser
+  //                   ? styles.currentUserMessageText
+  //                   : styles.UserMessageText
+  //               }
+  //             >
+  //               {item?.message}
+  //             </Text>
+  //             <View
+  //               style={{
+  //                 flexDirection: "row",
+  //               }}
+  //             >
+  //               {(!sameUserInNextMessage ||
+  //                 !attachToPreviousItem ||
+  //                 !attachToNextItem) &&
+  //                 !messageBelongsToCurrentUser && (
+  //                   <Image
+  //                     style={styles.avatar}
+  //                     source={require('../assets/demo_teacher.jpg')}
+  //                   />
+  //                 )}
+  //             </View>
+  //           </View>
+  //           {(index === 0 || !sameUserInNextMessage || !attachToNextItem) && (
+  //             <Text style={styles.messageTime}>
+  //               {moment(currentMessage.created_at).format("LT")}
+  //             </Text>
+  //           )}
+  //         </View>
+  //       </TouchableHighlight>
+  //     </View>
+  //   );
+  // };
+
+  const renderBubble = (item,index) =>{
+    if (item == null) return;
+    const {
+      created_at,
+      id,
+      message,
+      team_id,
+      type
+    } = item;
+    const isSent = item?.team_id !== null;
     return (
-      <View>
-        {!attachToPreviousItem && (
-          <View style={styles.messageView}>
-            <Text style={styles.dateText}>
-              {new Date().setHours(0, 0, 0, 0) -
-                new Date(currentMessage.created_at).setHours(0, 0, 0, 0) ==
-              0
-                ? "TODAY"
-                : moment(currentMessage.created_at).format("ll")}
-            </Text>
-          </View>
-        )}
-        <TouchableHighlight activeOpacity={0.95} underlayColor={underlayColor}>
-          <View>
-            <View
-              style={[
-                messageBelongsToCurrentUser
-                  ? styles.messageTimeAndNameContainerRight
-                  : styles.messageTimeAndNameContainerLeft,
-              ]}
-            >
-              <Text
-                style={
-                  messageBelongsToCurrentUser
-                    ? styles.currentUserMessageText
-                    : styles.UserMessageText
-                }
-              >
-                {item?.message}
-              </Text>
-              <View
-                style={{
-                  flexDirection: "row",
-                }}
-              >
-                {(!sameUserInNextMessage ||
-                  !attachToPreviousItem ||
-                  !attachToNextItem) &&
-                  !messageBelongsToCurrentUser && (
-                    <Image
-                      style={styles.avatar}
-                      source={{
-                        uri: messageBelongsToCurrentUser
-                          ? teachersInfo?.avatar
-                          : "",
-                      }}
-                    />
-                  )}
-              </View>
-            </View>
-            {(index === 0 || !sameUserInNextMessage || !attachToNextItem) && (
-              <Text style={styles.messageTime}>
-                {moment(currentMessage.created_at).format("LT")}
-              </Text>
-            )}
-          </View>
-        </TouchableHighlight>
+      <View style={[styles.message, isSent ? styles.sent : styles.received]}>
+        <Text style={[styles.messageText,isSent ? styles.sentText : styles.receivedText]}>{message}</Text>
+        <Text style={[styles.messageTime,isSent? styles.sendTime: styles.receivedTime]}>{moment(created_at).fromNow()}</Text>
       </View>
     );
-  };
+  }
 
   return (
     <Container>
       <CustomStatusBarView barStyle="dark-content" />
       {renderToolBar()}
+      {/* <View
+        style={{
+          backgroundColor: primaryColor_800,
+          paddingHorizontal: 16,
+          paddingVertical: 8,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <View>
+          <Text
+            style={{
+              fontFamily: "RHD-Medium",
+              fontSize: 16,
+              lineHeight: 24,
+              color: "#fff",
+            }}
+          >
+            Subject
+          </Text>
+
+          <Text
+            style={{
+              fontFamily: "RHD-Medium",
+              fontSize: 14,
+              lineHeight: 21,
+              color: "#e5e5e5",
+            }}
+          >
+            {subject ?? "No Subject Added"}
+          </Text>
+        </View>
+        <TouchableOpacity>
+          <Feather name="edit" size={16} color={"#fff"} />
+        </TouchableOpacity>
+      </View> */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -410,7 +463,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   bottomView: {
-    height: 56,
+    minHeight: 56,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -427,7 +480,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
-  messageView: {
+  dateView: {
     justifyContent: "center",
     alignSelf: "center",
     paddingVertical: 6,
@@ -464,6 +517,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     flexShrink: 1,
   },
+  UserMessageText: {
+    fontSize: 16,
+    fontFamily: "RHD-Medium",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    flexShrink: 1,
+  },
   avatar: {
     width: 24,
     height: 24,
@@ -480,5 +540,40 @@ const styles = StyleSheet.create({
     marginVertical: 4,
     textAlign: "right",
   },
+  message: {
+    borderRadius: 10,
+    margin: 10,
+    padding: 10,
+    maxWidth: '70%',
+  },
+  sent: {
+    backgroundColor: primaryColor,
+    alignSelf: 'flex-end',
+  },
+  received: {
+    backgroundColor: '#FFFFFF',
+    alignSelf: 'flex-start',
+  },
+  sentText:{
+    color:"#fff",
+  },  
+  receivedText:{
+    color:"#161924",
+  },
+  messageText: {
+    fontFamily:"RHD-Regular",
+    fontSize:14
+  },
+  messageTime: {
+    fontSize: 12,
+    marginTop: 5,
+    textAlign: 'right',
+  },
+  sendTime:{
+    color: 'white',
+  },
+  receivedTime:{
+    color: "#161924"
+  }
 });
 export default ParentsCommunicationScreen;

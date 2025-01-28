@@ -38,6 +38,7 @@ import ConversationList from "../components/ConversationList";
 import MyClassesTab from "../components/MyClassesTab";
 import ProfileTab from "../components/ProfileTab";
 import { supabase } from "../backend/supabaseClient";
+import Avatar from "../components/Avatar";
 const { width } = new Dimensions.get("screen");
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -45,6 +46,7 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPage, setSelectedPage] = useState(0);
   const [notificationCount, setNotificationCount] = useState(null);
+  const [leaveRequestCount, setLeaveRequestCount] = useState(0);
   const pagerRef = useRef();
 
   useFocusEffect(
@@ -86,6 +88,7 @@ const HomeScreen = () => {
   useEffect(() => {
     //get current statistics
     getNotificationInfo();
+    getLeaveRequestCount();
     //start listener
 
     const teacherNotificationInfo = supabase
@@ -96,7 +99,7 @@ const HomeScreen = () => {
           event: "UPDATE",
           schema: "public",
           table: "teacher_notification_info",
-          filter: "id=eq."+supabase_api.shared.uid,
+          filter: "id=eq." + supabase_api.shared.uid,
         },
         (payload) => {
           setNotificationCount(payload?.new);
@@ -121,6 +124,20 @@ const HomeScreen = () => {
         );
       });
   };
+
+  const getLeaveRequestCount = async() =>{
+    supabase_api.shared
+      .getLeaveRequestCount()
+      .then((data) => {
+        setLeaveRequestCount(data);
+      })
+      .catch((error) => {
+        ErrorLogger.shared.ShowError(
+          "HomeScreen: getNotificationInfo: ",
+          error
+        );
+      });
+  }
 
   const setNavigationBar = () => {
     if (Platform.OS == "android") NavigationBar.setBackgroundColorAsync("#fff");
@@ -218,7 +235,7 @@ const HomeScreen = () => {
           contentContainerStyle={{ paddingVertical: 8 }}
           nestedScrollEnabled
         >
-          <TeachersDetailsTab info={null} />
+          {/* <TeachersDetailsTab info={null} /> */}
           <CurrentTimeTableView />
           <MenuTitle title={"Actions"} />
           <ScrollView
@@ -233,7 +250,7 @@ const HomeScreen = () => {
             <MenuItem
               item={ActionData[19]}
               color="#b330e1"
-              value={notificationCount?.leave_request}
+              value={leaveRequestCount}
             />
             <MenuItem
               item={ActionData[20]}
@@ -262,12 +279,16 @@ const HomeScreen = () => {
         onPress={() => pagerRef.current.setPage(page)}
       >
         <View>
-          <MaterialIcons
-            style={[{ justifyContent: "center", alignSelf: "center" }]}
-            size={24}
-            color={selectedPage === page ? primaryColor : primaryText}
-            name={icon ?? ""}
-          />
+          {label === "Me" ? (
+            <Avatar width={24} height={24} user={Teacher.shared.getTeacherInfo()}/>
+          ) : (
+            <MaterialIcons
+              style={[{ justifyContent: "center", alignSelf: "center" }]}
+              size={24}
+              color={selectedPage === page ? primaryColor : primaryText}
+              name={icon ?? ""}
+            />
+          )}
           <Text
             style={[
               styles.bottomLabel,

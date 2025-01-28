@@ -6,9 +6,11 @@ import {
   defaultImageBgColor,
   primaryColor_50,
   primaryText,
+  secondaryText,
 } from "../utils/Color";
 import { useNavigation } from "@react-navigation/native";
 import Teacher from "../state/TeacherManager";
+import Avatar from "./Avatar";
 
 export default function TeachersDetailsTab({ info }) {
   const navigation = useNavigation();
@@ -39,17 +41,13 @@ export default function TeachersDetailsTab({ info }) {
       }}
     >
       <View style={styles.container}>
-        <Image
-          style={styles.avatar}
-          defaultSource={require("../assets/DefaultImage.jpg")}
-          source={{ uri: 'https://www.google.com/imgres?q=indian%20teacher%20url&imgurl=https%3A%2F%2Ft3.ftcdn.net%2Fjpg%2F04%2F48%2F03%2F56%2F360_F_448035690_o2uvf0WcCJcOkjoiDhCqHZdqoi8KzQzO.jpg&imgrefurl=https%3A%2F%2Fstock.adobe.com%2Fsearch%3Fk%3D%2522indian%2Bteacher%2522&docid=oZoCbbQoiBiexM&tbnid=O_MpKfOPGLH45M&vet=12ahUKEwjis82C2Z-IAxVF1DgGHbA7PF4QM3oECHUQAA..i&w=523&h=360&hcb=2&ved=2ahUKEwjis82C2Z-IAxVF1DgGHbA7PF4QM3oECHUQAA'}}
-        ></Image>
+        <Avatar width={36} height={36} user={Teacher.shared.getAllDetails()}/>
         <View style={styles.middleView}>
           <Text
             style={{
-              fontSize: 18,
-              lineHeight: 27,
-              fontFamily: "RHD-Medium",
+              fontSize: 16,
+              lineHeight: 20,
+              fontFamily: "RHD-Bold",
             }}
           >
             {userInfo?.name}
@@ -57,12 +55,12 @@ export default function TeachersDetailsTab({ info }) {
           <Text
             style={{
               fontSize: 12,
-              lineHeight: 18,
-              fontFamily: "RHD-Regular",
-              color: primaryText,
+              lineHeight: 16,
+              fontFamily: "RHD-Medium",
+              color: secondaryText,
             }}
           >
-            Good Morning, have a nice day ahead :)
+           {'Shanti Niketan '}
           </Text>
         </View>
         <View style={{backgroundColor:primaryColor_50,borderRadius:8,paddingHorizontal:16,paddingVertical:8}}>

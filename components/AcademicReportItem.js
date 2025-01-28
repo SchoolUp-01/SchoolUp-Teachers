@@ -133,14 +133,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     justifyContent: "space-between",
     alignItems: "center",
-    height: 56,
+    paddingVertical:8
   },
   leaveType: { fontFamily: "RHD-Medium", fontSize: 16, lineHeight: 24 },
   leaveReason: {
     fontFamily: "RHD-Regular",
     fontSize: 14,
-    lineHeight: 18,
-    marginTop: 4,
+    lineHeight: 21,
   },
   leaveSubView: {
     flexDirection: "row",

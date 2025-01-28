@@ -1,14 +1,12 @@
 import { StyleSheet, View,Image } from "react-native";
-import { MenuItem, Title, ToolbarBorder } from "./styledComponents";
+import { MenuItem, ToolbarBorder } from "./styledComponents";
 import { useNavigation } from "@react-navigation/native";
 import {
   borderColor,
   borderWidth,
   defaultImageBgColor,
-  primaryColor,
 } from "../utils/Color";
 import { Feather } from "@expo/vector-icons";
-import Teacher from "../state/TeacherManager";
 
 export default function StatusTab() {
   const navigation = useNavigation();

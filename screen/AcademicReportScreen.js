@@ -34,6 +34,7 @@ import BottomModal from "../components/Modals";
 import { OptionsButton } from "../components/Buttons";
 import AcademicReportItem from "../components/AcademicReportItem";
 import { ItemLabel } from "../components/Label";
+import Teacher from "../state/TeacherManager";
 
 const TAG_OPTIONS = [
   "All",
@@ -44,23 +45,18 @@ const TAG_OPTIONS = [
   "Completed",
 ];
 
-const statusColors = {
-  "Setup Required": "#FF6347", // Tomato Red
-  Upcoming: "#FFA500", // Orange
-  Active: "#32CD32", // Lime Green
-  "Evaluation In-Progress": "#1E90FF", // Dodger Blue
-  Completed: "#6A5ACD", // Slate Blue
-};
-
 const AcademicReportScreen = () => {
   const navigation = useNavigation();
+  const schoolId = Teacher.shared.getSchoolID();
   const [reportInfo, setReportInfo] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTag, setSelectedTag] = useState("All");
   const [searchText, setSearchText] = useState("");
+  const [uniqueTag, setUniqueTag] = useState([]);
 
   useEffect(() => {
+    fetchUniqueStatus();
     supabase_api.shared
       .getExamInfo()
       .then((res) => setReportInfo(res))
@@ -73,6 +69,13 @@ const AcademicReportScreen = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  const fetchUniqueStatus = async () => {
+    supabase_api.shared.fetchUniqueStatuses(schoolId).then((statuses) => {
+      console.log(statuses);
+      setUniqueTag(["All", ...statuses]);
+    });
+  };
+
   const toggleModal = () => setModalVisible((prev) => !prev);
 
   const onRaiseConcern = () => {
@@ -82,8 +85,7 @@ const AcademicReportScreen = () => {
 
   const filteredReports = useMemo(() => {
     return reportInfo.filter((item) => {
-      const matchesTag =
-        selectedTag === "All" || item.status === selectedTag;
+      const matchesTag = selectedTag === "All" || item.status === selectedTag;
       const matchesSearch = item.title
         .toLowerCase()
         .includes(searchText.toLowerCase());
@@ -115,13 +117,13 @@ const AcademicReportScreen = () => {
           horizontal
           showsHorizontalScrollIndicator={false}
         >
-          {TAG_OPTIONS.map((tag) => (
+          {uniqueTag.map((tag) => (
             <OptionItem key={tag} item={tag} />
           ))}
         </ScrollView>
       </View>
     );
-  }, [searchText, selectedTag]);
+  }, [searchText, selectedTag, uniqueTag]);
 
   const OptionItem = React.memo(({ item }) => {
     const isSelected = item === selectedTag;
@@ -147,15 +149,15 @@ const AcademicReportScreen = () => {
       </TouchableOpacity>
     );
   });
-  
+
   const renderContent = () => {
     const isSearchActive = searchText.length > 0;
     const isTagFiltered = selectedTag !== "All";
-  
+
     if (loading) {
       return <StudentReportShimmer />;
     }
-  
+
     return (
       <>
         {renderHeader()}
@@ -189,8 +191,6 @@ const AcademicReportScreen = () => {
       </>
     );
   };
-
-  
 
   return (
     <Container>

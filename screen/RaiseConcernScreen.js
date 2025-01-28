@@ -179,7 +179,7 @@ export default function RaiseConcernScreen() {
                 >
                   <MenuItem item={"General"} />
                   <MenuItem item={"Daily Task"} />
-                  <MenuItem item={"Teachers"} />
+                  <MenuItem item={"Leave Requests"} />
                   <MenuItem item={"Lesson Plan"} />
                   <MenuItem item={"Exams"} />
                   <MenuItem item={"Time Table"} />

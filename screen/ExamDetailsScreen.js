@@ -1,28 +1,31 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import {
-  ScrollView,
-  View,
-  Text,
-  Animated,
-  FlatList,
-  TouchableOpacity,
-} from "react-native";
-import { Container, ContentView } from "../components/styledComponents";
+  Container,
+  MenuItem,
+  ScreenHint,
+  Title,
+  Toolbar,
+} from "../components/styledComponents";
 import CustomStatusBarView from "../components/CustomStatusBarView";
-import { BasicToolBar } from "../components/ToolBarLayout";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import {
+  backgroundColor,
   borderColor,
   borderWidth,
+  primaryColor,
   primaryColor_50,
   primaryText,
   secondaryText,
 } from "../utils/Color";
 import { convertDate } from "../utils/DateUtils";
-import ExamClassList from "../components/ExamClassList";
 import supabase_api from "../backend/supabase_api";
 import ErrorLogger from "../utils/ErrorLogger";
 import { Feather } from "@expo/vector-icons";
+import PagerView from "react-native-pager-view";
+import GradeBook from "../components/GradeBook";
+import { getOrdinalSuffix } from "../utils/Number";
+import ExamAnalysis from "../components/ExamAnalytics";
 
 export default function ExamDetailsScreen() {
   const navigation = useNavigation();
@@ -30,16 +33,29 @@ export default function ExamDetailsScreen() {
   const examDetails = route.params.examDetails;
   const [loading, setLoading] = useState(true);
   const [classList, setClassList] = useState([]);
-  const [selectedIndex, setSelectedIndex] = useState(null);
-  const [animationValue] = useState(new Animated.Value(1));
+  const pagerRef = useRef();
+
+  // Simplified state management
+  const [currentPage, setCurrentPage] = useState(0);
+  const [selectedClassDetails, setSelectedClassDetails] = useState(null);
+  const [selectedClassId, setSelectedClassId] = useState(null);
+
+  const onClassSelected = (class_id) => {
+    setSelectedClassId(class_id);
+    const data = examDetails.class_data.find(
+      (item) => item.class_id === class_id
+    );
+    setSelectedClassDetails(data);
+  };
 
   useEffect(() => {
     setLoading(true);
     supabase_api.shared
-      .getClassDetailsFromExam(examDetails?.id)
+      .getExamsClassList(examDetails?.id, 0, 1000)
       .then((res) => {
+        console.log(res);
         setClassList(res);
-        if (res.length !== 0) setSelectedIndex(0);
+        onClassSelected(res[0]?.class_id);
       })
       .catch((error) => {
         ErrorLogger.shared.ShowError(
@@ -50,168 +66,155 @@ export default function ExamDetailsScreen() {
       .finally(() => setLoading(false));
   }, [examDetails]);
 
-  const handleClassItemPress = (index) => {
-    setSelectedIndex(index);
-
-    // Add micro animation
-    Animated.spring(animationValue, {
-      toValue: 1.1,
-      friction: 3,
-      useNativeDriver: true,
-    }).start(() => {
-      Animated.spring(animationValue, {
-        toValue: 1,
-        friction: 3,
-        useNativeDriver: true,
-      }).start();
-    });
+  const handlePageChange = (position) => {
+    setCurrentPage(position);
+    pagerRef.current?.setPage(position);
   };
 
-  const renderExamDetails = () => {
-    return (
-      <View style={styles.examDetailsContainer}>
-        <Text style={styles.examTitle}>{examDetails?.title}</Text>
-        <Text style={styles.examDate}>
-          {convertDate(examDetails?.start_date) +
-            " - " +
-            convertDate(examDetails?.end_date)}
-        </Text>
-      </View>
-    );
-  };
-
-  const ClassItem = ({ item, index }) => {
-    if (!item) return null;
-
-    const { standard, section } = item;
-    const isSelected = index === selectedIndex;
+  const TabItem = ({ index, label }) => {
+    const isActive = currentPage === index;
 
     return (
       <TouchableOpacity
-        style={[
-          styles.classItem,
-          isSelected && styles.classItemSelected,
-          { transform: [{ scale: animationValue }] },
-        ]}
-        onPress={() => handleClassItemPress(index)}
+        style={{ alignSelf: "center", justifyContent: "center" }}
+        onPress={() => handlePageChange(index)}
       >
-        <Text>{standard + section}</Text>
+        <View
+          style={[
+            styles.tabItem,
+            {
+              borderColor: isActive ? primaryColor : borderColor,
+              borderBottomWidth: isActive ? 1 : 0,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              {
+                color: isActive ? primaryColor : primaryText,
+                fontFamily: isActive ? "RHD-Bold" : "RHD-Medium",
+              },
+            ]}
+          >
+            {label}
+          </Text>
+        </View>
       </TouchableOpacity>
     );
   };
 
-  const InformationView = ({ label, value }) => (
-    <View style={styles.informationView}>
-      <Text style={styles.informationLabel}>{label}</Text>
-      <Text style={styles.informationValue}>{value}</Text>
+  const renderTabs = () => (
+    <View style={styles.tabView}>
+      <TabItem index={0} label="Overview" />
+      {classList.map((classDetail, index) => (
+        <TabItem
+          key={classDetail.class_id}
+          index={index + 1}
+          label={`${getOrdinalSuffix(classDetail?.standard)} ${
+            classDetail?.section
+          }`}
+        />
+      ))}
     </View>
   );
 
-  const renderClassDetails = useCallback(() => {
-    if (!loading && classList.length > 0 && selectedIndex !== null) {
-      const item = classList[selectedIndex];
-      const matchedClass = examDetails?.class_data.find(
-        (detail) => detail.class_id === item.class_id
-      );
-      console.log("Cal: ", matchedClass);
-      return (
-        <View style={styles.classDetailsContainer}>
-          <View style={styles.informationContainer}>
-            <InformationView label={"Status"} value={matchedClass.status} />
-            <InformationView label={"Total Marks"} value={matchedClass.marks} />
-            <InformationView label={"Subjects"} value={item.subjects?.length} />
-          </View>
-          <Text style={styles.subjectsTitle}>Subjects</Text>
-          <View>
-            {item.subjects.length === 0 ? (
-              <Text>No subjects available</Text> // Optional: You can customize this
-            ) : (
-              <ScrollView>
-                {item.subjects.map((subjectItem) => (
-                  <View key={subjectItem.id} style={styles.subjectView}>
-                    <View>
-                      <Text style={styles.subjectName}>
-                        {subjectItem.subject}
-                      </Text>
-                      <Text style={styles.subjectCode}>
-                        {convertDate(subjectItem.exam_date)}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (
-                          examDetails?.status === "Upcoming" ||
-                          examDetails?.status === "Setup Required" ||
-                          examDetails?.status === "Active"
-                        ) {
-                          if (matchedClass?.status === "Active") {
-                            navigation.navigate("ExamPortionScreen", {
-                              subject: subjectItem,
-                              examDetails: examDetails,
-                              classDetails: item
-                            });
-                          }
-                        }else if(examDetails?.status === "Evaluation In-Progress"){
-                          if (matchedClass?.status !== "Setup required") {
-                            navigation.navigate("UpdateReportsScreen", {
-                              subject: subjectItem,
-                              classDetails: item,
-                              examDetails: examDetails
-                            });
-                          }                              
-                        }
-                      }}
-                    >
-                      <Feather
-                        name="chevron-right"
-                        size={20}
-                        color={primaryText}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      );
-    }
-    return null;
-  }, [loading, classList, selectedIndex]);
+  const renderExamOverview = () => (
+    <View style={styles.examDetailsContainer}>
+      <Text style={styles.examTitle}>{examDetails?.title}</Text>
+      <Text style={styles.examDate}>
+        {convertDate(examDetails?.start_date) +
+          " - " +
+          convertDate(examDetails?.end_date)}
+      </Text>
+    </View>
+  );
 
-  const renderClassList = () => {
-    return (
-      <View style={{ paddingHorizontal: 16, marginVertical: 8 }}>
-        <FlatList
-          data={classList}
-          renderItem={({ item, index }) => (
-            <ClassItem item={item} index={index} />
-          )}
-          horizontal
-        />
-      </View>
-    );
-  };
+  const renderClasses = () => (
+    <View style={{ paddingHorizontal: 16, marginVertical: 8 }}>
+      <FlatList
+        data={classList}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={
+              selectedClassId == item.class_id
+                ? styles.activeClassItem
+                : styles.classItem
+            }
+            onPress={() => {
+              onClassSelected(item.class_id);
+            }}
+          >
+            <Text>{item.standard + item.section}</Text>
+          </TouchableOpacity>
+        )}
+        horizontal
+      />
+    </View>
+  );
 
   return (
     <Container>
       <CustomStatusBarView barStyle="dark-content" />
-      <BasicToolBar title={"Exam Details"} navigation={navigation} />
-      {/* <ScrollView contentContainerStyle={styles.scrollViewContent}> */}
-      {renderExamDetails()}
-      <Text style={styles.classesTitle}>Classes</Text>
-      {renderClassList()}
-      {renderClassDetails()}
-      {/* <ExamClassList exam_id={examDetails?.id} /> */}
-      {/* </ScrollView> */}
+      <Toolbar>
+        <MenuItem onPress={() => navigation.goBack()}>
+          <Feather name="arrow-left" size={24} color={primaryText} />
+        </MenuItem>
+        <Title>Exam Details</Title>
+        <MenuItem>
+          <Feather name="more-horizontal" size={20} color={primaryText} />
+        </MenuItem>
+      </Toolbar>
+
+      {examDetails?.status == "Completed" && renderTabs()}
+
+      {examDetails?.status == "Setup Required" && (
+        <View>
+          {renderExamOverview()}
+                <Text style={styles.classesTitle}>Classes</Text>
+          
+          {renderClasses()}
+          <ScreenHint>
+          Exam setup can only be completed on the Admin Dashboard. 
+          Please log in to the dashboard on your desktop or tablet to proceed.
+          </ScreenHint>
+        </View>
+      )}
+
+      {examDetails?.status == "Completed" && (
+        <PagerView
+          ref={pagerRef}
+          style={{ flex: 1 }}
+          initialPage={0}
+          onPageSelected={(e) => setCurrentPage(e.nativeEvent.position)}
+        >
+          <View key="overview">
+            {/* Overview Page */}
+            {renderExamOverview()}
+                  <Text style={styles.classesTitle}>Classes</Text>
+            
+            {renderClasses()}
+            <ExamAnalysis classData={selectedClassDetails} />
+          </View>
+
+          {/* Class Pages */}
+          {classList.map((classDetail) => (
+            <View key={classDetail.class_id}>
+              <GradeBook
+                examId={examDetails?.id}
+                classId={classDetail.class_id}
+                classData={examDetails?.class_data}
+              />
+            </View>
+          ))}
+        </PagerView>
+      )}
     </Container>
   );
 }
 
 const styles = {
-  scrollViewContent: {
-    flexGrow: 1,
-  },
+  // ... (keeping existing styles)
   examDetailsContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -238,7 +241,6 @@ const styles = {
     paddingHorizontal: 16,
   },
   classItem: {
-    flexDirection: "row",
     borderWidth: borderWidth,
     borderColor: borderColor,
     paddingHorizontal: 16,
@@ -248,53 +250,36 @@ const styles = {
     marginEnd: 16,
     flexShrink: 1,
   },
-  classItemSelected: {
+  activeClassItem: {
+    borderWidth: borderWidth,
+    borderColor: primaryColor,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    marginEnd: 16,
+    flexShrink: 1,
     backgroundColor: primaryColor_50,
   },
-  classDetailsContainer: {
-    paddingHorizontal: 16,
-  },
-  informationContainer: {
-    flexDirection: "row",
-    gap: 36,
-  },
-  informationView: {
-    paddingVertical: 8,
-  },
-  informationLabel: {
-    fontFamily: "RHD-Medium",
-    fontSize: 12,
-    lineHeight: 16,
-    color: secondaryText,
-  },
-  informationValue: {
-    fontFamily: "RHD-Medium",
+  tabText: {
     fontSize: 16,
     lineHeight: 24,
-  },
-  subjectsTitle: {
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  subjectView: {
     paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderWidth: borderWidth,
-    borderColor: borderColor,
-    borderRadius: 4,
-    marginVertical: 8,
+    textAlign: "center",
+    alignSelf: "center",
+    justifyContent: "center",
+  },
+  tabItem: {
+    marginEnd: 8,
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
-  subjectName: {
-    fontFamily: "RHD-Medium",
-    fontSize: 16,
-    color: primaryText,
-  },
-  subjectCode: {
-    fontFamily: "RHD-Medium",
-    fontSize: 14,
-    color: secondaryText,
+  tabView: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    borderBottomWidth: borderWidth,
+    borderColor: borderColor,
   },
 };

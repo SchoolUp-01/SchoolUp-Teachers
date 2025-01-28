@@ -16,18 +16,18 @@ export function calculateDaysBetweenDates(startDate, endDate) {
 
 export function formatDate(dateString) {
   const months = [
-    "January",
-    "February",
-    "March",
-    "April",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
     "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sept",
+    "Oct",
+    "Nov",
+    "Dec",
   ];
 
   const [year, month, day] = dateString.split("-");
@@ -152,4 +152,15 @@ export function formatTime(timeString) {
     minute: '2-digit',
     hour12: true
   }).replace(',', ''); // Remove comma that toLocaleString adds in some implementations
+}
+
+export function isDateGreaterThanToday(eventDate) {
+  const today = new Date(); // Current date
+  today.setHours(0, 0, 0, 0); // Set time to midnight (00:00:00)
+  
+  const event = new Date(eventDate); // Provided event date
+  event.setHours(0, 0, 0, 0); // Set time to midnight (00:00:00)
+
+  // Compare the dates
+  return event.getTime() >= today.getTime();
 }

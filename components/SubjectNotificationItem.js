@@ -34,7 +34,7 @@ const SubjectNotificationItem = ({ completed = false, onUpdate, item ,date}) => 
     subject_info: {
       subject,
       teacher_id,
-      teacher_info: { avatar, name },
+      team_info: { avatar, name },
     },
     class_info: { section, standard },
     title,

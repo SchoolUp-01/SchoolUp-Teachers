@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   StyleSheet,
   View,
@@ -26,16 +26,21 @@ import EmptyState from "./EmptyState";
 import ErrorLogger from "../utils/ErrorLogger";
 import moment from "moment";
 import { Feather } from "@expo/vector-icons";
-import {
-  Title,
-  ToolbarBorder,
-} from "./styledComponents";
+import { Title, Toolbar } from "./styledComponents";
+import Avatar from "./Avatar";
+import TeacherSubjectList from "./TeacherSubjectList";
+import PagerView from "react-native-pager-view";
+import CommunityTab from "./CommunityTab";
 
 export default function ConversationList() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [conversationList, setConversationList] = useState([]);
   const [searchText, setSearchText] = useState("");
+  const tabList = ["Direct", "Community"];
+  const [tab, setTab] = useState("Direct");
+  const pagerRef = useRef();
+  const [selectedPage, setSelectedPage] = useState(0);
 
   useEffect(() => {
     supabase_api.shared
@@ -55,37 +60,30 @@ export default function ConversationList() {
   }, []);
 
   const ConversationItem = ({ item }) => {
-    if (item === null) return;
+    if (!item) return null;
     const {
       id,
-      last_message,
-      last_uid,
-      parent_info: { avatar: parentAvatar, name: parentName },
-      teacher_info: { avatar: teacherAvatar, id: teacherId, name: teacherName },
-      student_info: { avatar: studentAvatar, name: studentName },
+
+      message_info: { message, team_id },
+      parent_info: { avatar, name },
       updated_on: updatedOn,
     } = item;
-    let search = searchText.toLowerCase();
-    let parentFiltered = parentName?.toLowerCase().includes(search);
-    let studentFiltered = studentName?.toLowerCase().includes(search);
-    let isVisible = parentFiltered || studentFiltered;
-    if (!isVisible) return null;
+
     return (
       <TouchableHighlight
-        style={{ marginBottom: 8, paddingVertical: 6, marginTop: 8 }}
+        style={{ marginBottom: 8, paddingVertical: 6 }}
         activeOpacity={0.95}
         underlayColor={underlayColor}
-        onPress={() => {
+        onPress={() =>
           navigation.navigate("ActionStack", {
             screen: "ParentsCommunicationScreen",
             params: {
-              teacherInfo: item?.teacher_info,
-              parentInfo: item?.parent_info,
-              studentInfo: item?.student_info,
+              parentInfo: item.parent_info,
               conversationID: id,
+              conversation: item,
             },
-          });
-        }}
+          })
+        }
       >
         <View
           style={{
@@ -97,30 +95,8 @@ export default function ConversationList() {
             paddingHorizontal: 16,
           }}
         >
-          <Image
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              marginRight: 16,
-              backgroundColor: defaultImageBgColor,
-              borderWidth: borderWidth,
-              borderColor: borderColor,
-              alignSelf: "center",
-            }}
-            source={{
-              uri: parentAvatar,
-            }}
-            defaultSource={require("../assets/DefaultImage.jpg")}
-          />
-
-          <View
-            style={{
-              flex: 1,
-              justifyContent: "center",
-              alignSelf: "center",
-            }}
-          >
+          <Avatar width={48} height={48} user={item.parent_info} />
+          <View style={{ flex: 1, justifyContent: "center", marginStart: 16 }}>
             <View
               style={{
                 flexDirection: "row",
@@ -128,74 +104,36 @@ export default function ConversationList() {
                 marginBottom: 4,
               }}
             >
-              <View style={{ flexDirection: "row" }}>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontFamily: "RHD-Medium",
-                    textAlignVertical: "center",
-                    color: primaryText,
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {parentName + " (" + studentName + ")"}
-                </Text>
-              </View>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontFamily: "RHD-Medium",
+                  textTransform: "capitalize",
+                  color: primaryText,
+                }}
+              >
+                {name}
+              </Text>
               <Text
                 style={{
                   fontSize: 14,
                   fontFamily: "RHD-Regular",
-                  textAlignVertical: "center",
                   color: secondaryText,
                 }}
               >
-                {new Date().setHours(0, 0, 0, 0) -
-                  new Date(updatedOn).setHours(0, 0, 0, 0) ==
-                0
-                  ? moment(updatedOn).format("LT")
-                  : moment(updatedOn).format("ll")}
+                {moment(updatedOn).calendar()}
               </Text>
             </View>
-            <View
+            <Text
               style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
+                fontSize: 14,
+                fontFamily: "RHD-Regular",
               }}
+              numberOfLines={1}
             >
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontFamily: "RHD-Regular",
-                }}
-                numberOfLines={1}
-              >
-                {last_uid === supabase_api.shared.uid ? "You: " : ""}
-                {last_message}
-              </Text>
-
-              {/* <View
-                    style={{
-                      width: 16,
-                      height: 16,
-                      borderRadius: 10,
-                      backgroundColor: primaryColor,
-                      alignSelf: "flex-end",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Text
-                        style={{
-                          color: "#fff",
-                          fontFamily: "RHD-Medium",
-                          fontSize: 10,
-                        }}
-                      >
-                        {this.props.item?.unread_count}
-                      </Text>
-                  </View> */}
-            </View>
+              {team_id === supabase_api.shared.uid ? "You: " : ""}
+              {message}
+            </Text>
           </View>
         </View>
       </TouchableHighlight>
@@ -220,7 +158,7 @@ export default function ConversationList() {
 
   const renderToolBar = () => {
     return (
-      <ToolbarBorder>
+      <Toolbar>
         <Title
           style={{
             position: "relative",
@@ -254,7 +192,40 @@ export default function ConversationList() {
             + New Conversation
           </Text>
         </TouchableOpacity>
-      </ToolbarBorder>
+      </Toolbar>
+    );
+  };
+
+  const TabItem = ({ item }) => {
+    return (
+      <TouchableOpacity
+        style={{ alignSelf: "center", justifyContent: "center", flex: 1 }}
+        onPress={() => {
+          pagerRef.current.setPage(tabList.indexOf(item));
+        }}
+      >
+        <View
+          style={[
+            styles.tabItem,
+            {
+              borderColor: item == tab ? primaryColor : borderColor,
+              borderBottomWidth: item == tab ? 1 : 0,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              {
+                color: item == tab ? primaryColor : primaryText,
+                fontFamily: item == tab ? "RHD-Bold" : "RHD-Medium",
+              },
+            ]}
+          >
+            {item}
+          </Text>
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -283,17 +254,35 @@ export default function ConversationList() {
   return (
     <View style={{ flex: 1 }}>
       {renderToolBar()}
-      <FlatList
-        contentContainerStyle={{ flexGrow: 1 }}
-        data={conversationList}
-        renderItem={({ item }) => <ConversationItem item={item} />}
-        keyExtractor={(item, index) => String(index)}
-        horizontal={false}
-        showsHorizontalScrollIndicator={false}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={renderEmpty}
-        ListHeaderComponent={<View>{renderHeader()}</View>}
-      />
+      <View style={styles.tabView}>
+        <TabItem item={"Direct"} />
+        <TabItem item={"Community"} />
+      </View>
+
+      <PagerView
+        ref={pagerRef}
+        style={{ flex: 1 }}
+        initialPage={selectedPage}
+        onPageSelected={(position) => {
+          setSelectedPage(position.nativeEvent.position);
+          setTab(tabList[position.nativeEvent.position]);
+        }}
+      >
+        <FlatList
+          contentContainerStyle={{ flexGrow: 1 }}
+          data={conversationList}
+          renderItem={({ item }) => <ConversationItem item={item} />}
+          keyExtractor={(item, index) => String(index)}
+          horizontal={false}
+          showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={renderEmpty}
+          ListHeaderComponent={<View>{renderHeader()}</View>}
+        />
+        <View style={{ flex: 1 }}>
+          <CommunityTab />
+        </View>
+      </PagerView>
     </View>
   );
 }
@@ -302,8 +291,6 @@ const styles = StyleSheet.create({
   toolbarView: {
     marginHorizontal: 16,
     paddingBottom: 16,
-    borderBottomWidth: borderWidth,
-    borderColor: borderColor,
   },
   headerView: {
     flexDirection: "row",
@@ -335,5 +322,30 @@ const styles = StyleSheet.create({
     fontFamily: "RHD-Medium",
     fontSize: 16,
     marginHorizontal: 16,
+  },
+  tabView: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    borderBottomWidth: borderWidth,
+    borderColor: borderColor,
+  },
+  tabText: {
+    fontSize: 16,
+    lineHeight: 24,
+    paddingHorizontal: 8,
+    textAlign: "center",
+    alignSelf: "center",
+    justifyContent: "center",
+  },
+  tabItem: {
+    marginEnd: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 24,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignItems: "center",
+    alignSelf: "center",
+    // backgroundColor: itemColor,
   },
 });

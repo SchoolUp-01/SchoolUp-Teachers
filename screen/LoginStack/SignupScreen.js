@@ -184,6 +184,14 @@ export default function SignupScreen() {
     setShowGoogleSignModal(false);
   };
 
+  const onPrivacyClicked = () =>{
+  navigation.navigate("LoginStack", { screen:'PrivacyPolicyScreen' })
+  }
+
+  const onTermsClicked = () =>{
+    navigation.navigate("LoginStack", { screen:'TermsOfServiceScreen' })
+    }
+
   return (
     <Container>
       <CustomStatusBarView barStyle="dark-content" />
@@ -340,12 +348,12 @@ export default function SignupScreen() {
                     {
                       pattern: /Privacy Policy/,
                       style: styles.linkText,
-                      onPress: this.onPrivacyClicked,
+                      onPress: onPrivacyClicked,
                     },
                     {
                       pattern: /Terms and Conditions/,
                       style: styles.linkText,
-                      onPress: this.onTermsClicked,
+                      onPress: onTermsClicked,
                     },
                   ]}
                 >

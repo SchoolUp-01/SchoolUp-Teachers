@@ -5,17 +5,20 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { decode } from "base64-arraybuffer";
 import {
   class_info_db,
+  community_message_info_db,
   concern_info_db,
   conversation_info_db,
   daily_task_info_db,
   exam_info_db,
   exam_timetable_info_db,
   holiday_calendar_db,
+  issue_comment_db,
   leave_applications_db,
   lesson_info_db,
   message_info_db,
   parent_info_db,
   parent_notification_db,
+  push_notification_db,
   school_event_info,
   school_info_db,
   school_management_db,
@@ -508,7 +511,12 @@ class supabase_api {
     });
   };
 
-  updateLeaveRequest = async (leaveID, reason, approve) => {
+  updateLeaveRequest = async (
+    leaveID,
+    reason,
+    approve,
+    status = "Approved"
+  ) => {
     return new Promise(async (res, rej) => {
       const { data, error } = await supabase
         .from(leave_applications_db)
@@ -516,6 +524,7 @@ class supabase_api {
           approved: approve,
           approved_on: new Date().toISOString(),
           remark: reason,
+          status: status,
         })
         .eq("id", leaveID);
       if (error) rej(error);
@@ -523,19 +532,50 @@ class supabase_api {
     });
   };
 
-  getLeaveApplication = async (startIndex = 0, endIndex = 5) => {
+  getLeaveApplication = async (
+    startIndex = 0,
+    endIndex = 5,
+    search = null,
+    tag = null
+  ) => {
+    return new Promise(async (res, rej) => {
+      let query = supabase
+        .from(leave_applications_db)
+        .select(
+          "id,created_at,status,reason,approved,approved_on,remark,start_date,end_date,type,parent_id,parent_info!inner(name),team_info!leave_applications_teacher_id_fkey(id,name),student_info!inner(id,name,avatar,class_info!inner(standard,section))"
+        )
+        // .gte("end_date", new Date().toISOString()) // Get all leaves that are not expired yet
+        .order("start_date", { ascending: false })
+        .eq("teacher_id", this.uid)
+        .range(startIndex, endIndex);
+
+      if (search) {
+        // query = query.or(
+        //   `student_info.name.ilike.%${search}%,parent_info.name.ilike.%${search}%,class_info.standard.ilike.%${search}%`
+        // );
+      }
+
+      if (tag && tag !== "All") {
+        query = query.eq("status", tag);
+      }
+
+      const { data, error } = await query;
+      if (error) rej(error);
+      else res(data);
+    });
+  };
+
+  getLeaveDetailsById = async (id) => {
     return new Promise(async (res, rej) => {
       const { data, error } = await supabase
         .from(leave_applications_db)
         .select(
-          "id,created_at,reason,approved,approved_on,start_date,end_date,type,parent_id,parent_info!inner(name),teacher_info!inner(id,name),student_info!inner(id,name,avatar,class_info!inner(standard,section))"
+          "id,created_at,status,reason,approved,approved_on,remark,start_date,end_date,type,parent_id,parent_info!inner(name),team_info!leave_applications_teacher_id_fkey(id,name),student_info!inner(id,name,avatar,class_info!inner(standard,section))"
         )
-        .gte("end_date", new Date().toISOString()) // Get all leaves that are not expired yet
-        .order("start_date", { ascending: false })
-        .eq("teacher_id", this.uid)
-        .range(startIndex, endIndex);
+        .eq("id", id)
+        .maybeSingle();
       if (error) rej(error);
-      else res(data);
+      res(data);
     });
   };
 
@@ -680,14 +720,29 @@ class supabase_api {
     });
   };
 
-  getConcernReport = async () => {
+  getConcernReport = async (
+    start_index = 0,
+    end_index = 0,
+    search = "",
+    tag = null
+  ) => {
     return new Promise(async (res, rej) => {
-      const { data, error } = await supabase
+      let query = supabase
         .from(concern_info_db)
         .select(
-          "id,created_at,parent_info!inner(id,name,avatar),student_info!inner(id,name,avatar),type,reason,remarks,closed_on"
+          "id,description, created_at,teacher_id,team_id,teacher:team_info!teacher_id(id, name, avatar),team:team_info!team_id(id, name, avatar), parent_info!inner(id, name, avatar), student_info!left(id, name, avatar,class_info!inner(id,standard,section)), type, reason, remarks, closed_on,status,closed_by:team_info!closed_by(id, name, avatar)"
         )
+        .range(start_index, end_index - 1)
+        .order("created_at", { ascending: false })
         .eq("teacher_id", this.uid);
+      if (tag && tag !== "All") {
+        query = query.eq("status", tag);
+      }
+      if (search) {
+        const searchCondition = `type.ilike.%${search}%`;
+        query = query.or(searchCondition);
+      }
+      const { data, error } = await query;
       if (error) rej(error);
       else {
         res(data);
@@ -695,36 +750,133 @@ class supabase_api {
     });
   };
 
-  getExamInfo = async() =>{
+  getConcernReportByID = async (id) => {
+    return new Promise(async (res, rej) => {
+      let query = supabase
+        .from(concern_info_db)
+        .select(
+          "id,description, created_at,teacher_id,team_id,teacher:team_info!teacher_id(id, name, avatar),team:team_info!team_id(id, name, avatar), parent_info!inner(id, name, avatar), student_info!left(id, name, avatar,class_info!inner(id,standard,section)), type, reason, remarks, closed_on,status,closed_by:team_info!closed_by(id, name, avatar)"
+        )
+        .eq("id", id)
+        .maybeSingle();
+
+      const { data, error } = await query;
+      if (error) rej(error);
+      else {
+        res(data);
+      }
+    });
+  };
+
+  updateSupportTicket({ issueID, values }) {
     return new Promise(async (res, rej) => {
       const { data, error } = await supabase
-      .from(exam_info_db)
-      .select(
-        "id,title,note,start_date,end_date,status,class_data")
-        .eq("school_id",Teacher.shared.getSchoolID())
-        if (error) rej(error);
-        else {
-          res(data);
-          }
-          });
-
-
-
-  }
-
-  async updateExam(values,exam_id) {
-    return new Promise(async (res, rej) => {
-      const { data, error } = await supabase.from(exam_info_db).update(values)
-      .eq('id',exam_id);
+        .from(concern_info_db)
+        .update({
+          ...values,
+        })
+        .eq("id", issueID);
       if (error) rej(error);
       res(data);
     });
   }
 
-  async updateExamTimeTableInfo(values,exam_id,subject_id) {
+  async getIssueComment(start_index = 0, end_index = 5, issue_id) {
+    try {
+      const { data, error } = await supabase
+        .from(issue_comment_db)
+        .select(
+          "id, created_at, team_info!left(id, name, avatar), parent_info!left(id, name, avatar), comment,edited"
+        )
+        .order("created_at", { ascending: false })
+        .range(start_index, end_index - 1)
+        .eq("issueID", issue_id);
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async getIssueCommentById(id) {
+    try {
+      const { data, error } = await supabase
+        .from(issue_comment_db)
+        .select(
+          "id, created_at, team_info!left(id, name, avatar), parent_info!left(id, name, avatar), comment,edited"
+        )
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async addIssueComment({ comment, issueID, school_id }) {
     return new Promise(async (res, rej) => {
-      const { data, error } = await supabase.from(exam_timetable_info_db).update(values)
-      .match({'exam_id':exam_id,"subject_id":subject_id});
+      const uid = await this.uid;
+
+      const { data, error } = await supabase
+        .from(issue_comment_db)
+        .insert({
+          comment,
+          teamID: uid,
+          issueID,
+          school_id: school_id,
+        })
+        .select("*")
+        .single();
+      if (error) rej(error);
+      res(data);
+    });
+  }
+
+  fetchUniqueStatuses = async (schoolId) => {
+    const {data,error} = await supabase.rpc('get_unique_statuses',{
+      school_id_input:schoolId
+    })
+
+    if (error) {
+      ErrorLogger.shared.ShowError("SupabaseAPI: fetchUniqueStatuses: ", error);
+      return [];
+    }
+    return data;
+  };
+
+  getExamInfo = async () => {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase
+        .from(exam_info_db)
+        .select("id,title,note,start_date,end_date,status,class_data")
+        .eq("school_id", Teacher.shared.getSchoolID());
+      if (error) rej(error);
+      else {
+        res(data);
+      }
+    });
+  };
+
+  async updateExam(values, exam_id) {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase
+        .from(exam_info_db)
+        .update(values)
+        .eq("id", exam_id);
+      if (error) rej(error);
+      res(data);
+    });
+  }
+
+  async updateExamTimeTableInfo(values, exam_id, subject_id) {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase
+        .from(exam_timetable_info_db)
+        .update(values)
+        .match({ exam_id: exam_id, subject_id: subject_id });
       if (error) rej(error);
       res(data);
     });
@@ -732,9 +884,39 @@ class supabase_api {
 
   async getClassDetailsFromExam(exam_id) {
     return new Promise(async (res, rej) => {
-      const { data, error } = await supabase.rpc('fetch_exam_details_by_exam_id',{
-        exam_id_input: exam_id
-      })
+      const { data, error } = await supabase.rpc(
+        "fetch_exam_details_by_exam_id",
+        {
+          exam_id_input: exam_id,
+        }
+      );
+      if (error) rej(error);
+      res(data);
+    });
+  }
+
+
+  async getExamsClassList(exam_id, start_index = 0, end_index = 5) {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase.rpc("get_exam_class_details", {
+        exam_id_input: exam_id,
+        start_index_input: start_index,
+        end_index_input: end_index,
+      });
+      if (error) rej(error);
+      res(data);
+    });
+  }
+
+  async fetchClassGrade(exam_id, class_id) {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase.rpc(
+        "fetch_grades_by_class_and_exam",
+        {
+          input_exam_id: exam_id,
+          input_class_id: class_id,
+        }
+      );
       if (error) rej(error);
       res(data);
     });
@@ -767,14 +949,13 @@ class supabase_api {
   };
 
   getConversationInformation = async () => {
-    console.log("UID: ", this.uid);
     return new Promise(async (res, rej) => {
       const { data, error } = await supabase
         .from(conversation_info_db)
         .select(
-          "id,teacher_id,parent_info!inner(id,name,avatar),student_info!inner(name,avatar,class_info!inner(standard,section)),teacher_info!inner(id,name,avatar),last_uid,last_message,updated_on"
+          "id,parent_info!inner(id,name,avatar),team_id,team_info!inner(id,name,avatar),message_info!conversation_info_message_id_fkey(message,type,team_id,parent_id),updated_on,unseen_count"
         )
-        .eq("teacher_id", "0d05b200-1a18-4d88-a27d-c4a469fca586")
+        .eq("team_id", this.uid)
         .order("updated_on", { ascending: false });
       if (error) rej(error);
       res(data);
@@ -812,28 +993,30 @@ class supabase_api {
     }
   };
 
-  addTeacherMessage = async (conversationID, parentID, message) => {
+  addTeacherMessage = async (conversationID, parentId, message) => {
     try {
       let newConversationID = conversationID;
 
       if (newConversationID === null) {
         // If conversationID is null, create a new conversation
-        const result = await this.addNewConversation(parentID);
+        const result = await this.addNewConversation(parentId);
         newConversationID = result[0].id; // Assuming data is an array with one object
       }
-      const { data, error } = await supabase.from(message_info_db).insert({
-        message: message,
-        chat_id: newConversationID,
-        type: "normal",
-        from: this.uid,
-      });
+      const { data, error } = await supabase
+        .from(message_info_db)
+        .insert({
+          message: message,
+          chat_id: newConversationID,
+          type: "normal",
+          team_id: this.uid,
+        })
+        .select("id")
+        .single();
       if (error) throw error;
       const { data: chatData, error: chatError } = await supabase
         .from(conversation_info_db)
         .update({
-          last_message: message,
-          last_uid: this.uid,
-          updated_on: new Date(),
+          message_id: data?.id,
         })
         .eq("id", newConversationID);
       if (chatError) throw chatError;
@@ -858,6 +1041,19 @@ class supabase_api {
         .eq("chat_id", conversationID)
         .order("created_at", { ascending: false })
         .range(startIndex, endIndex);
+      if (error) rej(error);
+      res(data);
+    });
+  };
+
+  updateConversationSeenCount = async (conversationID) => {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase
+        .from(conversation_info_db)
+        .update({
+          unseen_count: 0,
+        })
+        .eq("id", conversationID);
       if (error) rej(error);
       res(data);
     });
@@ -906,6 +1102,70 @@ class supabase_api {
     });
   };
 
+  async getCommunityMessageList(start_index, end_index, school_id) {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase
+        .from(community_message_info_db)
+        .select(
+          "id,created_at,role,message,type,parent_id,team_id,team_info!left(id,avatar,name),parent_info!left(id,name,avatar)"
+        )
+        .eq("school_id", school_id)
+        .order("created_at", { ascending: false })
+        .range(start_index, end_index - 1);
+      if (error) {
+        rej(error);
+      }
+      res(data);
+    });
+  }
+
+  async addCommunityMessage(message, school_id) {
+    return new Promise(async (res, rej) => {
+      const { data: messageData, error: messageError } = await supabase
+        .from(community_message_info_db)
+        .insert({
+          message: message.trim(),
+          school_id: school_id,
+          team_id: this.uid,
+          role: "Teacher",
+        })
+        .select("id")
+        .single();
+      if (messageError) {
+        rej(messageError);
+      }
+      res(messageData);
+    });
+  }
+
+  async getParentDetails(parent_id) {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase
+        .from(parent_info_db)
+        .select("id,name,avatar")
+        .eq("id", parent_id)
+        .single();
+      if (error) {
+        rej(error);
+      }
+      res(data);
+    });
+  }
+
+  async getTeamDetails(team_id) {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase
+        .from(team_info_db)
+        .select("id,name,avatar")
+        .eq("id", team_id)
+        .single();
+      if (error) {
+        rej(error);
+      }
+      res(data);
+    });
+  }
+
   getTeacherNotificationInfo = async () => {
     return new Promise(async (res, rej) => {
       const { data, error } = await supabase
@@ -913,9 +1173,32 @@ class supabase_api {
         .select(
           "id,leave_request,parent_concern,academic_report,notification,unread_message"
         )
-        .eq("id", this.uid).single();
+        .eq("id", this.uid)
+        .single();
       if (error) rej(error);
       res(data);
+    });
+  };
+
+  getLeaveRequestCount = async () => {
+    return new Promise(async (res, rej) => {
+      try {
+        let query = supabase
+          .from(leave_applications_db)
+          .select("*", { count: "exact", head: true })
+          .eq("status", "Pending")
+          .eq("teacher_id", this.uid);
+
+        const { count, error } = await query;
+
+        if (error) throw error;
+        return count;
+      } catch (error) {
+        ErrorLogger.shared.ShowError(
+          "SupabaseAPI: getLeaveRequestCount: ",
+          error
+        );
+      }
     });
   };
 
@@ -926,7 +1209,7 @@ class supabase_api {
       const { data, error } = await supabase
         .from(timetable_info_db)
         .select(
-          "id,class_id,class_info!inner(standard,section),end_hour,end_minute,location,start_hour,start_minute,subject_id,title,day,subject_info!inner(subject,teacher_id,teacher_info(name,avatar))"
+          "id,class_id,class_info!inner(standard,section),end_hour,end_minute,location,start_hour,start_minute,subject_id,title,day,subject_info!inner(subject,teacher_id,team_info(name,avatar))"
         )
         .eq("day", days[day])
         .order("slot") // Order by start time
@@ -1175,7 +1458,13 @@ class supabase_api {
     }
   };
 
-  addStudentMemory = async (title, description, type, mediaList,class_list) => {
+  addStudentMemory = async (
+    title,
+    description,
+    type,
+    mediaList,
+    class_list
+  ) => {
     try {
       let insertObject = {
         title: title,
@@ -1328,7 +1617,10 @@ class supabase_api {
         .eq("teacher_id", this.uid);
       if (error) rej(error);
       const uniqueData = data.filter((item, index, array) => {
-        return array.findIndex(t => t.class_info.id === item.class_info.id) === index;
+        return (
+          array.findIndex((t) => t.class_info.id === item.class_info.id) ===
+          index
+        );
       });
       res(uniqueData);
     });
@@ -1358,6 +1650,56 @@ class supabase_api {
       res(data);
     });
   };
+
+  //Push Notifications
+  addPushNotifications = async ({ title, description, user_id }) => {
+    try {
+      const { data, error } = await supabase
+        .from(push_notification_db)
+        .insert({
+          title: title,
+          description: description,
+          user_id: user_id,
+        })
+        .select("id")
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+    } catch (error) {
+      ErrorLogger.shared.ShowError("Error adding Push Notifications:", error);
+      throw error;
+    }
+  };
+
+  matchSchoolNameAndID = (schoolName, schoolID) => {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase
+        .from(school_info_db)
+        .select("id")
+        .match({
+          name: schoolName,
+          id: schoolID,
+        })
+        .maybeSingle();
+      if (error) rej(error);
+      else res(data !== null);
+    });
+  };
+
+  async updateTeamDetails(user_id, values) {
+    return new Promise(async (res, rej) => {
+      const { data, error } = await supabase
+        .from(team_info_db)
+        .update({
+          ...values,
+        })
+        .eq("id", user_id);
+      if (error) rej(error);
+      else res(data);
+    });
+  }
 }
 
 supabase_api.shared = new supabase_api();

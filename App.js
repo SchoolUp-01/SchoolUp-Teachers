@@ -61,7 +61,7 @@ const App = () =>{
   const [defaultScreen, setDefaultScreen] = useState(null);
   const [data, setData] = useState(null);
   const [session, setSession] = useState(null);
-  const [animationFinished, setAnimationFinished] = useState(true);
+  const [animationFinished, setAnimationFinished] = useState(false);
   const [linkerListener, setLinkerListener] = useState(null);
 
   const ref = useRef();

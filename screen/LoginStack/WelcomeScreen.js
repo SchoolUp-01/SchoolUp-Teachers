@@ -6,19 +6,16 @@ import {
   StyleSheet,
   Dimensions,
 } from "react-native";
-// import PagerView from "react-native-pager-view";
 import { StatusBar } from "expo-status-bar";
 import AnimatedLottieView from "lottie-react-native";
-
-import { primaryColor, primaryText, secondaryText,primaryColor_800 } from "../../utils/Color";
+import { primaryColor, primaryText, secondaryText } from "../../utils/Color";
 import { Container } from "../../components/styledComponents";
-// import { Circle, Container } from "../styledComponents";
-const { width, height } = Dimensions.get("screen");
+
+const { width } = Dimensions.get("screen");
 
 export default class WelcomeScreen extends React.PureComponent {
   intervalID = null;
   state = {
-    animation: null,
     selectedPage: 0,
     ref: new React.createRef(),
   };
@@ -33,115 +30,80 @@ export default class WelcomeScreen extends React.PureComponent {
 
   playTransition = () => {
     let page = this.state.selectedPage + 1;
-    if (page > 2) {
-      page = 0;
-    }
+    if (page > 2) page = 0;
     this.state.ref?.current?.setPage(page);
-    this.setState({
-      selectedPage: page,
-    });
+    this.setState({ selectedPage: page });
   };
 
-  trackerColor = (indexOfComp) =>
-    this.state.selectedPage === indexOfComp ? primaryColor : secondaryText;
+  trackerColor = (index) =>
+    this.state.selectedPage === index ? primaryColor : secondaryText;
 
-  renderPager = (title, description, animation) => {
-    return (
-      <View style={styles.pagerContent}>
-        <AnimatedLottieView
-          autoPlay
-          resizeMode="cover"
-          ref={(animation) => {
-            this.animation = animation;
-          }}
-          style={{
-            flex:1,
-            backgroundColor: "transparent",
-          }}
-          source={animation}
-        />
-       
-      </View>
-    );
-  };
+  renderPager = () => (
+    <View style={styles.pagerContent}>
+      <AnimatedLottieView
+        autoPlay
+        style={styles.animationStyle}
+        source={require("../../assets/school_main.json")}
+      />
+    </View>
+  );
 
-
-  
-
-  renderButtons = () => {
-    return(
-      <View>
+  renderButtons = () => (
+    <View>
       <TouchableOpacity
-        style={{
-          alignSelf: "center",
-        }}
-        onPress={() => this.props.navigation.navigate("LoginStack",{screen:"SignupScreen"})}
-
+        style={styles.centered}
+        onPress={() =>
+          this.props.navigation.navigate("LoginStack", { screen: "SignupScreen" })
+        }
       >
         <View style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Join Schoolup now!</Text>
+          <Text style={styles.primaryButtonText}>Join SchoolUp now!</Text>
         </View>
       </TouchableOpacity>
       <TouchableOpacity
-        style={{
-          alignSelf: "center",
-          marginTop: 16,
-        }}
-        onPress={() => this.props.navigation.navigate("LoginStack",{screen:"LoginScreen"})}
+        style={[styles.centered, styles.buttonSpacing]}
+        onPress={() =>
+          this.props.navigation.navigate("LoginStack", { screen: "LoginScreen" })
+        }
       >
-        <View style={styles.secondaryBotton}>
-          <Text style={styles.secondaryBottonText}>Login</Text>
+        <View style={styles.secondaryButton}>
+          <Text style={styles.secondaryButtonText}>Login</Text>
         </View>
       </TouchableOpacity>
     </View>
-    )
-  };
+  );
 
-  renderSupportText = () => {
-    return (
-      <View style={styles.supportView}>
-        <TouchableOpacity
-          onPress={() => {
-            this.props.navigation.navigate("AboutScreen");
-          }}
-        >
-          <Text style={styles.supportText}>About us</Text>
-        </TouchableOpacity>
-        <Text style={{ color: secondaryText }}>|</Text>
-        <TouchableOpacity
-          onPress={() => {
-            this.props.navigation.navigate("LoginStack",{screen:"CreateProfileScreen"});
-          }}
-        >
-          <Text style={styles.supportText}>Privacy Policy</Text>
-        </TouchableOpacity>
-        <Text style={{ color: secondaryText }}>|</Text>
-        <TouchableOpacity
-          onPress={() => {
-            this.props.navigation.navigate("TermsAndConditionScreen");
-          }}
-        >
-          <Text style={styles.supportText}>Terms of use</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
+  renderSupportText = () => (
+    <View style={styles.supportView}>
+      {["AboutUsScreen", "PrivacyPolicyScreen", "TermsOfServiceScreen"].map(
+        (screen, index) => (
+          <React.Fragment key={screen}>
+            <TouchableOpacity
+              onPress={() =>
+                this.props.navigation.navigate("LoginStack", { screen })
+              }
+            >
+              <Text style={styles.supportText}>
+                {screen.replace("Screen", "").split(/(?=[A-Z])/).join(" ")}
+              </Text>
+            </TouchableOpacity>
+            {index < 2 && <Text style={styles.separator}>|</Text>}
+          </React.Fragment>
+        )
+      )}
+    </View>
+  );
 
   render() {
     return (
       <Container>
-        <StatusBar animated barStyle="auto"></StatusBar>
-        {this.renderPager(
-            "elcome to StaWge",
-            "A learning platform that combines education and real-world problem-solving.",
-            require('../../assets/school_main.json'))
-            }
-             <View style={{marginTop:width*0.2}}>
-          <Text style={styles.title}>{"Welcome to SchoolUp"}</Text>
-          <Text style={styles.description}>{"Connecting dots, Building Bridges"}</Text>
+        <StatusBar animated barStyle="auto" />
+        {this.renderPager()}
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>Welcome to SchoolUp</Text>
+          <Text style={styles.description}>Connecting dots, Building Bridges</Text>
         </View>
         <View style={styles.footerView}>
-          {/* {this.showTracker()} */}
           {this.renderButtons()}
           {this.renderSupportText()}
         </View>
@@ -151,17 +113,53 @@ export default class WelcomeScreen extends React.PureComponent {
 }
 
 const styles = StyleSheet.create({
-  pagerView: {
-    flex: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   pagerContent: {
     paddingHorizontal: 16,
     justifyContent: "space-evenly",
-    marginTop: width*0.4,
-    height: width*0.6,
-    alignItems:"center"
+    marginTop: width * 0.4,
+    height: width * 0.6,
+    alignItems: "center",
+  },
+  animationStyle: {
+    width: width * 0.75,
+    height: width * 0.75,
+    backgroundColor: "transparent",
+    alignSelf: "center",
+  },
+  centered: {
+    alignSelf: "center",
+  },
+  buttonSpacing: {
+    marginTop: 16,
+  },
+  primaryButton: {
+    backgroundColor: primaryColor,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    paddingVertical: 8,
+    height: 52,
+    width: width * 0.85,
+  },
+  primaryButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontFamily: "RHD-Medium",
+  },
+  secondaryButton: {
+    borderColor: primaryColor,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    paddingVertical: 8,
+    height: 52,
+    width: width * 0.85,
+  },
+  secondaryButtonText: {
+    color: "#c7230e",
+    fontSize: 16,
+    fontFamily: "RHD-Medium",
   },
   title: {
     textAlign: "center",
@@ -178,60 +176,27 @@ const styles = StyleSheet.create({
     color: secondaryText,
     paddingHorizontal: 16,
   },
+  supportView: {
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    marginHorizontal: 16,
+    alignItems: "center",
+  },
   supportText: {
     fontSize: 12,
     fontFamily: "RHD-Regular",
     color: secondaryText,
     paddingHorizontal: 8,
-    textAlignVertical: "center",
   },
-  trackerView: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: 60,
-  },
-  supportView: {
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    marginHorizontal: 16,
-    alignSelf: "center",
-    alignItems: "center",
+  separator: {
+    color: secondaryText,
   },
   footerView: {
     flex: 1,
     alignItems: "center",
-    alignSelf: "center",
     justifyContent: "space-around",
   },
-  primaryButton: {
-    backgroundColor: primaryColor,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    paddingTop: 8,
-    paddingBottom: 8,
-    height: 52,
-    width: width * 0.85,
-  },
-  primaryButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontFamily: "RHD-Medium",
-  },
-  secondaryBotton: {
-    borderColor: primaryColor,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    paddingTop: 8,
-    paddingBottom: 8,
-    height: 52,
-    width: width * 0.85,
-  },
-  secondaryBottonText: {
-    color: "#c7230e",
-    fontSize: 16,
-    fontFamily: "RHD-Medium",
+  textContainer: {
+    marginTop: width * 0.2,
   },
 });
